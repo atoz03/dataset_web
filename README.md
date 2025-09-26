@@ -1,4 +1,4 @@
-# 数据集网络项目 (清晰布局)
+# 数据集网络项目
 
 这是一个用于管理和处理图像数据集的项目，特别适用于农作物病虫害等分类任务。项目提供了一系列脚本来帮助用户进行数据集的合并、重命名、清洗和索引等操作。
 
@@ -16,7 +16,7 @@
     python3 scripts/bulk_rename_by_class.py --root datasets/diseases --tag pd
     ```
 
-2.  **清洗图像** (安全移动模式):
+2.  **清洗图像** :
     ```bash
     python3 scripts/deduplicate_images.py --roots datasets/crops datasets/diseases datasets/pests --min-width 224 --min-height 224 --blur-threshold 60 --action move
     ```
