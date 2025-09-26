@@ -1,0 +1,15 @@
+# 忽略数据集
+datasets/
+
+# 忽略Python虚拟环境
+.venv/
+
+# 忽略VSCode的配置
+.vscode/
+
+# 忽略垃圾箱
+.trash/
+
+# 忽略其他常见文件
+*.pyc
+__pycache__/
