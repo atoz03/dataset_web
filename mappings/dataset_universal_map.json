@@ -1,0 +1,1795 @@
+{
+  "generated_at": "2025-09-26T05:23:13Z",
+  "roots": {
+    "datasets/crops": {
+      "path": "datasets/crops",
+      "total_classes": 152,
+      "total_images": 40368,
+      "total_non_images": 1,
+      "classes": {
+        "__root__": {
+          "path": "datasets/crops",
+          "image_count": 0,
+          "non_image_count": 1,
+          "source_tag_counts": {}
+        },
+        "Cabbages and other brassicas": {
+          "path": "datasets/crops/Cabbages and other brassicas",
+          "image_count": 230,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 230
+          }
+        },
+        "Eggplants (Aubergines)": {
+          "path": "datasets/crops/Eggplants (Aubergines)",
+          "image_count": 276,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 276
+          }
+        },
+        "Kale": {
+          "path": "datasets/crops/Kale",
+          "image_count": 283,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 283
+          }
+        },
+        "Hemp": {
+          "path": "datasets/crops/Hemp",
+          "image_count": 275,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 275
+          }
+        },
+        "Mangoes, mangosteens, guavas": {
+          "path": "datasets/crops/Mangoes, mangosteens, guavas",
+          "image_count": 259,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 259
+          }
+        },
+        "Gooseberries": {
+          "path": "datasets/crops/Gooseberries",
+          "image_count": 290,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 290
+          }
+        },
+        "Mustard greens": {
+          "path": "datasets/crops/Mustard greens",
+          "image_count": 299,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 299
+          }
+        },
+        "Hen eggs (shell weight)": {
+          "path": "datasets/crops/Hen eggs (shell weight)",
+          "image_count": 220,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 220
+          }
+        },
+        "Dry peas": {
+          "path": "datasets/crops/Dry peas",
+          "image_count": 287,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 287
+          }
+        },
+        "Rapeseed (Canola)": {
+          "path": "datasets/crops/Rapeseed (Canola)",
+          "image_count": 316,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 316
+          }
+        },
+        "Flaxseed (Linseed)": {
+          "path": "datasets/crops/Flaxseed (Linseed)",
+          "image_count": 313,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 313
+          }
+        },
+        "Raspberries": {
+          "path": "datasets/crops/Raspberries",
+          "image_count": 253,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 253
+          }
+        },
+        "Pomegranates": {
+          "path": "datasets/crops/Pomegranates",
+          "image_count": 298,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 298
+          }
+        },
+        "gram": {
+          "path": "datasets/crops/gram",
+          "image_count": 25,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 25
+          }
+        },
+        "Starfruit": {
+          "path": "datasets/crops/Starfruit",
+          "image_count": 302,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 302
+          }
+        },
+        "sugarcane": {
+          "path": "datasets/crops/sugarcane",
+          "image_count": 308,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 308
+          }
+        },
+        "Rosemary": {
+          "path": "datasets/crops/Rosemary",
+          "image_count": 251,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 251
+          }
+        },
+        "Rubber (natural)": {
+          "path": "datasets/crops/Rubber (natural)",
+          "image_count": 288,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 288
+          }
+        },
+        "Dates": {
+          "path": "datasets/crops/Dates",
+          "image_count": 292,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 292
+          }
+        },
+        "Chestnuts": {
+          "path": "datasets/crops/Chestnuts",
+          "image_count": 340,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 340
+          }
+        },
+        "Spinach": {
+          "path": "datasets/crops/Spinach",
+          "image_count": 299,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 299
+          }
+        },
+        "Mint": {
+          "path": "datasets/crops/Mint",
+          "image_count": 282,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 282
+          }
+        },
+        "Peas (Green)": {
+          "path": "datasets/crops/Peas (Green)",
+          "image_count": 298,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 298
+          }
+        },
+        "Kohlrabi": {
+          "path": "datasets/crops/Kohlrabi",
+          "image_count": 297,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 297
+          }
+        },
+        "Swiss chard": {
+          "path": "datasets/crops/Swiss chard",
+          "image_count": 319,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 319
+          }
+        },
+        "Tobacco-plant": {
+          "path": "datasets/crops/Tobacco-plant",
+          "image_count": 33,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 33
+          }
+        },
+        "Sugar beet": {
+          "path": "datasets/crops/Sugar beet",
+          "image_count": 262,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 262
+          }
+        },
+        "Scallions": {
+          "path": "datasets/crops/Scallions",
+          "image_count": 308,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 308
+          }
+        },
+        "Avocados": {
+          "path": "datasets/crops/Avocados",
+          "image_count": 280,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 280
+          }
+        },
+        "Endive": {
+          "path": "datasets/crops/Endive",
+          "image_count": 235,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 235
+          }
+        },
+        "Okra": {
+          "path": "datasets/crops/Okra",
+          "image_count": 209,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 209
+          }
+        },
+        "Yams": {
+          "path": "datasets/crops/Yams",
+          "image_count": 285,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 285
+          }
+        },
+        "Lemon": {
+          "path": "datasets/crops/Lemon",
+          "image_count": 28,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 28
+          }
+        },
+        "rice": {
+          "path": "datasets/crops/rice",
+          "image_count": 297,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 297
+          }
+        },
+        "Pumpkins, squash and gourds": {
+          "path": "datasets/crops/Pumpkins, squash and gourds",
+          "image_count": 346,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 346
+          }
+        },
+        "Acai": {
+          "path": "datasets/crops/Acai",
+          "image_count": 279,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 279
+          }
+        },
+        "Cranberries": {
+          "path": "datasets/crops/Cranberries",
+          "image_count": 271,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 271
+          }
+        },
+        "Pine nuts": {
+          "path": "datasets/crops/Pine nuts",
+          "image_count": 273,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 273
+          }
+        },
+        "Cocoa beans": {
+          "path": "datasets/crops/Cocoa beans",
+          "image_count": 307,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 307
+          }
+        },
+        "Brussels sprout": {
+          "path": "datasets/crops/Brussels sprout",
+          "image_count": 297,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 297
+          }
+        },
+        "Figs": {
+          "path": "datasets/crops/Figs",
+          "image_count": 270,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 270
+          }
+        },
+        "Cauliflower": {
+          "path": "datasets/crops/Cauliflower",
+          "image_count": 282,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 282
+          }
+        },
+        "Lupins": {
+          "path": "datasets/crops/Lupins",
+          "image_count": 312,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 312
+          }
+        },
+        "Horseradish": {
+          "path": "datasets/crops/Horseradish",
+          "image_count": 286,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 286
+          }
+        },
+        "Maracuja(Passionfruit)": {
+          "path": "datasets/crops/Maracuja(Passionfruit)",
+          "image_count": 320,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 320
+          }
+        },
+        "Pearl_millet(bajra)": {
+          "path": "datasets/crops/Pearl_millet(bajra)",
+          "image_count": 39,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 39
+          }
+        },
+        "Cotton lint": {
+          "path": "datasets/crops/Cotton lint",
+          "image_count": 263,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 263
+          }
+        },
+        "Dry beans": {
+          "path": "datasets/crops/Dry beans",
+          "image_count": 282,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 282
+          }
+        },
+        "cotton": {
+          "path": "datasets/crops/cotton",
+          "image_count": 32,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 32
+          }
+        },
+        "Cucumber": {
+          "path": "datasets/crops/Cucumber",
+          "image_count": 328,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 328
+          }
+        },
+        "Quinoa": {
+          "path": "datasets/crops/Quinoa",
+          "image_count": 260,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 260
+          }
+        },
+        "Oranges": {
+          "path": "datasets/crops/Oranges",
+          "image_count": 306,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 306
+          }
+        },
+        "Watermelons": {
+          "path": "datasets/crops/Watermelons",
+          "image_count": 269,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 269
+          }
+        },
+        "Jackfruit": {
+          "path": "datasets/crops/Jackfruit",
+          "image_count": 345,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 345
+          }
+        },
+        "Parsley": {
+          "path": "datasets/crops/Parsley",
+          "image_count": 301,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 301
+          }
+        },
+        "Teff": {
+          "path": "datasets/crops/Teff",
+          "image_count": 252,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 252
+          }
+        },
+        "Taro (cocoyam)": {
+          "path": "datasets/crops/Taro (cocoyam)",
+          "image_count": 251,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 251
+          }
+        },
+        "Fonio": {
+          "path": "datasets/crops/Fonio",
+          "image_count": 197,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 197
+          }
+        },
+        "crop_images": {
+          "path": "datasets/crops/crop_images",
+          "image_count": 198,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 198
+          }
+        },
+        "Beets": {
+          "path": "datasets/crops/Beets",
+          "image_count": 279,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 279
+          }
+        },
+        "Oil palm fruit": {
+          "path": "datasets/crops/Oil palm fruit",
+          "image_count": 257,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 257
+          }
+        },
+        "chilli": {
+          "path": "datasets/crops/chilli",
+          "image_count": 880,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 880
+          }
+        },
+        "Guavas": {
+          "path": "datasets/crops/Guavas",
+          "image_count": 279,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 279
+          }
+        },
+        "Pinto bean": {
+          "path": "datasets/crops/Pinto bean",
+          "image_count": 204,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 204
+          }
+        },
+        "Peaches and nectarines": {
+          "path": "datasets/crops/Peaches and nectarines",
+          "image_count": 294,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 294
+          }
+        },
+        "Potatoes": {
+          "path": "datasets/crops/Potatoes",
+          "image_count": 264,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 264
+          }
+        },
+        "Cherry": {
+          "path": "datasets/crops/Cherry",
+          "image_count": 310,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 310
+          }
+        },
+        "some_more_images": {
+          "path": "datasets/crops/some_more_images",
+          "image_count": 49,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 49
+          }
+        },
+        "Brazil nuts": {
+          "path": "datasets/crops/Brazil nuts",
+          "image_count": 272,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 272
+          }
+        },
+        "Apples": {
+          "path": "datasets/crops/Apples",
+          "image_count": 264,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 264
+          }
+        },
+        "Lychee": {
+          "path": "datasets/crops/Lychee",
+          "image_count": 249,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 249
+          }
+        },
+        "Onions (dry)": {
+          "path": "datasets/crops/Onions (dry)",
+          "image_count": 315,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 315
+          }
+        },
+        "Sweet potatoes": {
+          "path": "datasets/crops/Sweet potatoes",
+          "image_count": 239,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 239
+          }
+        },
+        "Durian": {
+          "path": "datasets/crops/Durian",
+          "image_count": 219,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 219
+          }
+        },
+        "Lemons and limes": {
+          "path": "datasets/crops/Lemons and limes",
+          "image_count": 277,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 277
+          }
+        },
+        "cardamom": {
+          "path": "datasets/crops/cardamom",
+          "image_count": 22,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 22
+          }
+        },
+        "Rambutan": {
+          "path": "datasets/crops/Rambutan",
+          "image_count": 259,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 259
+          }
+        },
+        "tea": {
+          "path": "datasets/crops/tea",
+          "image_count": 322,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 322
+          }
+        },
+        "Guarana": {
+          "path": "datasets/crops/Guarana",
+          "image_count": 223,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 223
+          }
+        },
+        "jowar": {
+          "path": "datasets/crops/jowar",
+          "image_count": 281,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 281
+          }
+        },
+        "Olive-tree": {
+          "path": "datasets/crops/Olive-tree",
+          "image_count": 372,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 372
+          }
+        },
+        "wheat": {
+          "path": "datasets/crops/wheat",
+          "image_count": 323,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 323
+          }
+        },
+        "vigna-radiati(Mung)": {
+          "path": "datasets/crops/vigna-radiati(Mung)",
+          "image_count": 249,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 249
+          }
+        },
+        "Mandarins, clementines, satsumas": {
+          "path": "datasets/crops/Mandarins, clementines, satsumas",
+          "image_count": 269,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 269
+          }
+        },
+        "Millet": {
+          "path": "datasets/crops/Millet",
+          "image_count": 256,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 256
+          }
+        },
+        "Soursop": {
+          "path": "datasets/crops/Soursop",
+          "image_count": 274,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 274
+          }
+        },
+        "Cashew nuts": {
+          "path": "datasets/crops/Cashew nuts",
+          "image_count": 321,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 321
+          }
+        },
+        "coconut": {
+          "path": "datasets/crops/coconut",
+          "image_count": 332,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 332
+          }
+        },
+        "Saffron": {
+          "path": "datasets/crops/Saffron",
+          "image_count": 278,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 278
+          }
+        },
+        "Turmeric": {
+          "path": "datasets/crops/Turmeric",
+          "image_count": 275,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 275
+          }
+        },
+        "Fox_nut(Makhana)": {
+          "path": "datasets/crops/Fox_nut(Makhana)",
+          "image_count": 23,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 23
+          }
+        },
+        "almond": {
+          "path": "datasets/crops/almond",
+          "image_count": 295,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 295
+          }
+        },
+        "Grapes": {
+          "path": "datasets/crops/Grapes",
+          "image_count": 261,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 261
+          }
+        },
+        "Flax fiber and tow": {
+          "path": "datasets/crops/Flax fiber and tow",
+          "image_count": 268,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 268
+          }
+        },
+        "Oats": {
+          "path": "datasets/crops/Oats",
+          "image_count": 293,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 293
+          }
+        },
+        "Oregano": {
+          "path": "datasets/crops/Oregano",
+          "image_count": 267,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 267
+          }
+        },
+        "Vanilla beans": {
+          "path": "datasets/crops/Vanilla beans",
+          "image_count": 267,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 267
+          }
+        },
+        "Cinnamon": {
+          "path": "datasets/crops/Cinnamon",
+          "image_count": 278,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 278
+          }
+        },
+        "Turnip greens": {
+          "path": "datasets/crops/Turnip greens",
+          "image_count": 272,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 272
+          }
+        },
+        "Lettuce and chicory": {
+          "path": "datasets/crops/Lettuce and chicory",
+          "image_count": 284,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 284
+          }
+        },
+        "Radishes and similar roots": {
+          "path": "datasets/crops/Radishes and similar roots",
+          "image_count": 256,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 256
+          }
+        },
+        "clove": {
+          "path": "datasets/crops/clove",
+          "image_count": 287,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 287
+          }
+        },
+        "Thyme": {
+          "path": "datasets/crops/Thyme",
+          "image_count": 283,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 283
+          }
+        },
+        "Coffee-plant": {
+          "path": "datasets/crops/Coffee-plant",
+          "image_count": 351,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 351
+          }
+        },
+        "Walnuts": {
+          "path": "datasets/crops/Walnuts",
+          "image_count": 288,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 288
+          }
+        },
+        "mustard-oil": {
+          "path": "datasets/crops/mustard-oil",
+          "image_count": 28,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 28
+          }
+        },
+        "Carrots and turnips": {
+          "path": "datasets/crops/Carrots and turnips",
+          "image_count": 288,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 288
+          }
+        },
+        "Cassava": {
+          "path": "datasets/crops/Cassava",
+          "image_count": 295,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 295
+          }
+        },
+        "Sunflower seeds": {
+          "path": "datasets/crops/Sunflower seeds",
+          "image_count": 295,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 295
+          }
+        },
+        "Blueberries": {
+          "path": "datasets/crops/Blueberries",
+          "image_count": 297,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 297
+          }
+        },
+        "Chickpeas": {
+          "path": "datasets/crops/Chickpeas",
+          "image_count": 291,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 291
+          }
+        },
+        "Triticale": {
+          "path": "datasets/crops/Triticale",
+          "image_count": 261,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 261
+          }
+        },
+        "jute": {
+          "path": "datasets/crops/jute",
+          "image_count": 275,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 275
+          }
+        },
+        "Hazelnuts": {
+          "path": "datasets/crops/Hazelnuts",
+          "image_count": 301,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 301
+          }
+        },
+        "Broccoli": {
+          "path": "datasets/crops/Broccoli",
+          "image_count": 278,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 278
+          }
+        },
+        "Tamarind": {
+          "path": "datasets/crops/Tamarind",
+          "image_count": 285,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 285
+          }
+        },
+        "Artichoke": {
+          "path": "datasets/crops/Artichoke",
+          "image_count": 289,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 289
+          }
+        },
+        "Camucamu": {
+          "path": "datasets/crops/Camucamu",
+          "image_count": 45,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 45
+          }
+        },
+        "Persimmons": {
+          "path": "datasets/crops/Persimmons",
+          "image_count": 298,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 298
+          }
+        },
+        "Collards": {
+          "path": "datasets/crops/Collards",
+          "image_count": 257,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 257
+          }
+        },
+        "Celery": {
+          "path": "datasets/crops/Celery",
+          "image_count": 270,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 270
+          }
+        },
+        "Navy bean": {
+          "path": "datasets/crops/Navy bean",
+          "image_count": 220,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 220
+          }
+        },
+        "banana": {
+          "path": "datasets/crops/banana",
+          "image_count": 317,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 317
+          }
+        },
+        "Groundnuts (Peanuts)": {
+          "path": "datasets/crops/Groundnuts (Peanuts)",
+          "image_count": 221,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 221
+          }
+        },
+        "Fava bean": {
+          "path": "datasets/crops/Fava bean",
+          "image_count": 292,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 292
+          }
+        },
+        "Bok choy": {
+          "path": "datasets/crops/Bok choy",
+          "image_count": 276,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 276
+          }
+        },
+        "Ginger": {
+          "path": "datasets/crops/Ginger",
+          "image_count": 276,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 276
+          }
+        },
+        "test_crop_image": {
+          "path": "datasets/crops/test_crop_image",
+          "image_count": 51,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 51
+          }
+        },
+        "Rye": {
+          "path": "datasets/crops/Rye",
+          "image_count": 283,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 283
+          }
+        },
+        "Cherimoya": {
+          "path": "datasets/crops/Cherimoya",
+          "image_count": 257,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 257
+          }
+        },
+        "soyabean": {
+          "path": "datasets/crops/soyabean",
+          "image_count": 300,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 300
+          }
+        },
+        "papaya": {
+          "path": "datasets/crops/papaya",
+          "image_count": 291,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 291
+          }
+        },
+        "Leeks": {
+          "path": "datasets/crops/Leeks",
+          "image_count": 255,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 255
+          }
+        },
+        "Garlic": {
+          "path": "datasets/crops/Garlic",
+          "image_count": 278,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 278
+          }
+        },
+        "Amaranth": {
+          "path": "datasets/crops/Amaranth",
+          "image_count": 291,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 291
+          }
+        },
+        "Plantains": {
+          "path": "datasets/crops/Plantains",
+          "image_count": 276,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 276
+          }
+        },
+        "Pistachios": {
+          "path": "datasets/crops/Pistachios",
+          "image_count": 242,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 242
+          }
+        },
+        "Lima bean": {
+          "path": "datasets/crops/Lima bean",
+          "image_count": 204,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 204
+          }
+        },
+        "pineapple": {
+          "path": "datasets/crops/pineapple",
+          "image_count": 298,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 298
+          }
+        },
+        "Mustard seeds": {
+          "path": "datasets/crops/Mustard seeds",
+          "image_count": 309,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 309
+          }
+        },
+        "tomato": {
+          "path": "datasets/crops/tomato",
+          "image_count": 293,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 293
+          }
+        },
+        "Lentils": {
+          "path": "datasets/crops/Lentils",
+          "image_count": 323,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 323
+          }
+        },
+        "kag2": {
+          "path": "datasets/crops/kag2",
+          "image_count": 695,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 695
+          }
+        },
+        "Longan": {
+          "path": "datasets/crops/Longan",
+          "image_count": 268,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 268
+          }
+        },
+        "Sage": {
+          "path": "datasets/crops/Sage",
+          "image_count": 263,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 263
+          }
+        },
+        "Strawberries": {
+          "path": "datasets/crops/Strawberries",
+          "image_count": 290,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 290
+          }
+        },
+        "Barley": {
+          "path": "datasets/crops/Barley",
+          "image_count": 271,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 271
+          }
+        },
+        "sunflower": {
+          "path": "datasets/crops/sunflower",
+          "image_count": 24,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 24
+          }
+        },
+        "Buckwheat": {
+          "path": "datasets/crops/Buckwheat",
+          "image_count": 284,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 284
+          }
+        },
+        "Black pepper": {
+          "path": "datasets/crops/Black pepper",
+          "image_count": 249,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 249
+          }
+        },
+        "maize": {
+          "path": "datasets/crops/maize",
+          "image_count": 335,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ac": 335
+          }
+        }
+      }
+    },
+    "datasets/diseases": {
+      "path": "datasets/diseases",
+      "total_classes": 54,
+      "total_images": 64543,
+      "total_non_images": 0,
+      "classes": {
+        "Tomato leaf late blight": {
+          "path": "datasets/diseases/Tomato leaf late blight",
+          "image_count": 2019,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "kd": 1901,
+            "pd": 118
+          }
+        },
+        "Potato leaf late blight": {
+          "path": "datasets/diseases/Potato leaf late blight",
+          "image_count": 1113,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "kd": 500,
+            "pd": 113,
+            "cd": 500
+          }
+        },
+        "Soybean leaf": {
+          "path": "datasets/diseases/Soybean leaf",
+          "image_count": 5155,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "kd": 5090,
+            "pd": 65
+          }
+        },
+        "Tomato leaf bacterial spot": {
+          "path": "datasets/diseases/Tomato leaf bacterial spot",
+          "image_count": 2250,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "kd": 2127,
+            "pd": 123
+          }
+        },
+        "Sugarcane leaf": {
+          "path": "datasets/diseases/Sugarcane leaf",
+          "image_count": 100,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "cd": 100
+          }
+        },
+        "Corn leaf blight": {
+          "path": "datasets/diseases/Corn leaf blight",
+          "image_count": 1198,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "pd": 213,
+            "cd": 985
+          }
+        },
+        "Wheat brown rust": {
+          "path": "datasets/diseases/Wheat brown rust",
+          "image_count": 902,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "cd": 902
+          }
+        },
+        "Apple Black rot": {
+          "path": "datasets/diseases/Apple Black rot",
+          "image_count": 621,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "kd": 621
+          }
+        },
+        "Tomato Early blight leaf": {
+          "path": "datasets/diseases/Tomato Early blight leaf",
+          "image_count": 96,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "pd": 96
+          }
+        },
+        "Tomato mold leaf": {
+          "path": "datasets/diseases/Tomato mold leaf",
+          "image_count": 112,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "pd": 112
+          }
+        },
+        "Raspberry leaf": {
+          "path": "datasets/diseases/Raspberry leaf",
+          "image_count": 504,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "kd": 371,
+            "pd": 133
+          }
+        },
+        "Rice brown spot": {
+          "path": "datasets/diseases/Rice brown spot",
+          "image_count": 612,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "cd": 612
+          }
+        },
+        "Cherry leaf": {
+          "path": "datasets/diseases/Cherry leaf",
+          "image_count": 66,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "pd": 66
+          }
+        },
+        "Apple Cedar apple rust": {
+          "path": "datasets/diseases/Apple Cedar apple rust",
+          "image_count": 275,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "kd": 275
+          }
+        },
+        "Squash Powdery mildew": {
+          "path": "datasets/diseases/Squash Powdery mildew",
+          "image_count": 1835,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "kd": 1835
+          }
+        },
+        "Tomato two spotted spider mites": {
+          "path": "datasets/diseases/Tomato two spotted spider mites",
+          "image_count": 1678,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "kd": 1676,
+            "pd": 2
+          }
+        },
+        "Tomato leaf mosaic virus": {
+          "path": "datasets/diseases/Tomato leaf mosaic virus",
+          "image_count": 438,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "pd": 65,
+            "kd": 373
+          }
+        },
+        "Apple leaf": {
+          "path": "datasets/diseases/Apple leaf",
+          "image_count": 1735,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "kd": 1638,
+            "pd": 97
+          }
+        },
+        "Tomato leaf yellow virus": {
+          "path": "datasets/diseases/Tomato leaf yellow virus",
+          "image_count": 5443,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "kd": 5357,
+            "pd": 86
+          }
+        },
+        "Tomato leaf early blight": {
+          "path": "datasets/diseases/Tomato leaf early blight",
+          "image_count": 1000,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "kd": 1000
+          }
+        },
+        "Sugarcane bacterial blight": {
+          "path": "datasets/diseases/Sugarcane bacterial blight",
+          "image_count": 100,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "cd": 100
+          }
+        },
+        "Tomato leaf mold": {
+          "path": "datasets/diseases/Tomato leaf mold",
+          "image_count": 952,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "kd": 952
+          }
+        },
+        "Tomato leaf": {
+          "path": "datasets/diseases/Tomato leaf",
+          "image_count": 1659,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "kd": 1585,
+            "pd": 74
+          }
+        },
+        "Blueberry leaf": {
+          "path": "datasets/diseases/Blueberry leaf",
+          "image_count": 1636,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "kd": 1502,
+            "pd": 134
+          }
+        },
+        "Wheat leaf": {
+          "path": "datasets/diseases/Wheat leaf",
+          "image_count": 1116,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "cd": 1116
+          }
+        },
+        "Bell_pepper leaf": {
+          "path": "datasets/diseases/Bell_pepper leaf",
+          "image_count": 67,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "pd": 67
+          }
+        },
+        "Tomato target spot": {
+          "path": "datasets/diseases/Tomato target spot",
+          "image_count": 1404,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "kd": 1404
+          }
+        },
+        "Corn leaf": {
+          "path": "datasets/diseases/Corn leaf",
+          "image_count": 1161,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "cd": 1161
+          }
+        },
+        "Strawberry leaf scorch": {
+          "path": "datasets/diseases/Strawberry leaf scorch",
+          "image_count": 1109,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "kd": 1109
+          }
+        },
+        "Grape leaf blight (Isariopsis leaf spot)": {
+          "path": "datasets/diseases/Grape leaf blight (Isariopsis leaf spot)",
+          "image_count": 1076,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "kd": 1076
+          }
+        },
+        "Apple Scab Leaf": {
+          "path": "datasets/diseases/Apple Scab Leaf",
+          "image_count": 112,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "pd": 112
+          }
+        },
+        "Rice leaf": {
+          "path": "datasets/diseases/Rice leaf",
+          "image_count": 1472,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "cd": 1472
+          }
+        },
+        "grape leaf black rot": {
+          "path": "datasets/diseases/grape leaf black rot",
+          "image_count": 72,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "pd": 72
+          }
+        },
+        "Grape esca (black measles)": {
+          "path": "datasets/diseases/Grape esca (black measles)",
+          "image_count": 1383,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "kd": 1383
+          }
+        },
+        ".trash": {
+          "path": "datasets/diseases/.trash",
+          "image_count": 4827,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "pd": 2376,
+            "kd": 1078,
+            "cd": 1373
+          }
+        },
+        "Rice leaf blast": {
+          "path": "datasets/diseases/Rice leaf blast",
+          "image_count": 964,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "cd": 964
+          }
+        },
+        "Peach leaf bacterial spot": {
+          "path": "datasets/diseases/Peach leaf bacterial spot",
+          "image_count": 2297,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "kd": 2297
+          }
+        },
+        "Potato leaf early blight": {
+          "path": "datasets/diseases/Potato leaf early blight",
+          "image_count": 1115,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "pd": 115,
+            "kd": 518,
+            "cd": 482
+          }
+        },
+        "Apple rust leaf": {
+          "path": "datasets/diseases/Apple rust leaf",
+          "image_count": 107,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "pd": 107
+          }
+        },
+        "Potato leaf": {
+          "path": "datasets/diseases/Potato leaf",
+          "image_count": 152,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "kd": 78,
+            "cd": 74
+          }
+        },
+        "Orange huanglongbing (citrus greening)": {
+          "path": "datasets/diseases/Orange huanglongbing (citrus greening)",
+          "image_count": 5507,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "kd": 5507
+          }
+        },
+        "Wheat yellow rust": {
+          "path": "datasets/diseases/Wheat yellow rust",
+          "image_count": 924,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "cd": 924
+          }
+        },
+        "Squash Powdery mildew leaf": {
+          "path": "datasets/diseases/Squash Powdery mildew leaf",
+          "image_count": 137,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "pd": 137
+          }
+        },
+        "Corn Gray leaf spot": {
+          "path": "datasets/diseases/Corn Gray leaf spot",
+          "image_count": 583,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "cd": 513,
+            "pd": 70
+          }
+        },
+        "Corn rust leaf": {
+          "path": "datasets/diseases/Corn rust leaf",
+          "image_count": 1320,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "cd": 1192,
+            "pd": 128
+          }
+        },
+        "Grape Black rot": {
+          "path": "datasets/diseases/Grape Black rot",
+          "image_count": 1180,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "kd": 1180
+          }
+        },
+        "Strawberry leaf": {
+          "path": "datasets/diseases/Strawberry leaf",
+          "image_count": 562,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "pd": 106,
+            "kd": 456
+          }
+        },
+        "Apple Apple scab": {
+          "path": "datasets/diseases/Apple Apple scab",
+          "image_count": 630,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "kd": 630
+          }
+        },
+        "Sugarcane red rot": {
+          "path": "datasets/diseases/Sugarcane red rot",
+          "image_count": 100,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "cd": 100
+          }
+        },
+        "grape leaf": {
+          "path": "datasets/diseases/grape leaf",
+          "image_count": 503,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "kd": 423,
+            "pd": 80
+          }
+        },
+        "Rice neck blast": {
+          "path": "datasets/diseases/Rice neck blast",
+          "image_count": 754,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "cd": 754
+          }
+        },
+        "Tomato Septoria leaf spot": {
+          "path": "datasets/diseases/Tomato Septoria leaf spot",
+          "image_count": 1897,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "pd": 126,
+            "kd": 1771
+          }
+        },
+        "Peach leaf": {
+          "path": "datasets/diseases/Peach leaf",
+          "image_count": 460,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "kd": 359,
+            "pd": 101
+          }
+        },
+        "Bell_pepper leaf spot": {
+          "path": "datasets/diseases/Bell_pepper leaf spot",
+          "image_count": 53,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "pd": 53
+          }
+        }
+      }
+    },
+    "datasets/pests": {
+      "path": "datasets/pests",
+      "total_classes": 12,
+      "total_images": 5494,
+      "total_non_images": 0,
+      "classes": {
+        "slug": {
+          "path": "datasets/pests/slug",
+          "image_count": 391,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ap": 391
+          }
+        },
+        "snail": {
+          "path": "datasets/pests/snail",
+          "image_count": 500,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ap": 500
+          }
+        },
+        "bees": {
+          "path": "datasets/pests/bees",
+          "image_count": 500,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ap": 500
+          }
+        },
+        "ants": {
+          "path": "datasets/pests/ants",
+          "image_count": 499,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ap": 499
+          }
+        },
+        "catterpillar": {
+          "path": "datasets/pests/catterpillar",
+          "image_count": 434,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ap": 434
+          }
+        },
+        "wasp": {
+          "path": "datasets/pests/wasp",
+          "image_count": 498,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ap": 498
+          }
+        },
+        "moth": {
+          "path": "datasets/pests/moth",
+          "image_count": 497,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ap": 497
+          }
+        },
+        "grasshopper": {
+          "path": "datasets/pests/grasshopper",
+          "image_count": 485,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ap": 485
+          }
+        },
+        "weevil": {
+          "path": "datasets/pests/weevil",
+          "image_count": 485,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ap": 485
+          }
+        },
+        "beetle": {
+          "path": "datasets/pests/beetle",
+          "image_count": 416,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ap": 416
+          }
+        },
+        "earthworms": {
+          "path": "datasets/pests/earthworms",
+          "image_count": 323,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ap": 323
+          }
+        },
+        "earwig": {
+          "path": "datasets/pests/earwig",
+          "image_count": 466,
+          "non_image_count": 0,
+          "source_tag_counts": {
+            "ap": 466
+          }
+        }
+      }
+    }
+  }
+}
