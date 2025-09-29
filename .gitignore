@@ -13,3 +13,7 @@ datasets/
 # 忽略其他常见文件
 *.pyc
 __pycache__/
+
+# 忽略docs目录下的md文件
+docs/*.md
+!docs/documentation.md
