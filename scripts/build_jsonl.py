@@ -31,7 +31,7 @@ from typing import Dict, Iterable, List, Optional, Tuple
 
 
 IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".bmp", ".gif", ".webp"}
-SOURCE_TOKENS = ("__cd__", "__pd__", "__ac__", "__ap__")
+SOURCE_TOKENS = ("__cd__", "__pd__", "__ac__", "__ap__", "__kd__")
 
 
 def is_image(p: Path) -> bool:
@@ -123,6 +123,102 @@ def infer_source(name: str, default_root: str) -> str:
     return default_root  # e.g., 'diseases', 'crops', 'pests'
 
 
+def load_mapping() -> Dict[str, str]:
+    mpath = Path("mappings/consolidated_mapping.json")
+    if mpath.exists():
+        try:
+            return json.loads(mpath.read_text(encoding="utf-8"))
+        except Exception:
+            return {}
+    return {}
+
+
+def normalize_npd_class(raw: str) -> str:
+    """Normalize common 'New Plant Diseases' style class names.
+
+    Examples:
+      Apple___healthy -> Apple leaf
+      Corn_(maize)___Common_rust_ -> Corn rust leaf
+      Tomato___Leaf_Mold -> Tomato mold leaf
+    """
+    cls = raw
+    if "___" in cls:
+        crop, rest = cls.split("___", 1)
+        crop = crop.replace("(maize)", "").replace("Corn_", "Corn").replace("Corn ", "Corn").strip(" _")
+        crop = crop.replace("Pepper,_bell", "Bell_pepper")
+        crop = crop.replace("Cherry_(including_sour)", "Cherry")
+        # keep grape lower-case to match ontology entries
+        crop = "grape" if crop in {"Grape", "grape"} else crop
+        # align soybean token used in ontology
+        crop = crop.replace("Soybean", "Soyabean")
+        disease = rest.replace("_", " ").replace("  ", " ").strip(" _")
+        disease_lc = disease.lower()
+        if disease_lc == "healthy":
+            return f"{crop} leaf" if crop.lower() != "grape" else "grape leaf"
+        # corn
+        if crop.startswith("Corn"):
+            if "cercospora" in disease_lc or "gray leaf spot" in disease_lc:
+                return "Corn Gray leaf spot"
+            if "common rust" in disease_lc:
+                return "Corn rust leaf"
+            if "northern leaf blight" in disease_lc:
+                return "Corn leaf blight"
+        # apple
+        if crop == "Apple":
+            if "cedar apple rust" in disease_lc:
+                return "Apple rust leaf"
+            if "apple scab" in disease_lc:
+                return "Apple Scab Leaf"
+            if "black rot" in disease_lc:
+                return "Apple leaf black rot"
+        # tomato
+        if crop == "Tomato":
+            if "bacterial spot" in disease_lc:
+                return "Tomato leaf bacterial spot"
+            if "early blight" in disease_lc:
+                return "Tomato Early blight leaf"
+            if "late blight" in disease_lc:
+                return "Tomato leaf late blight"
+            if "leaf mold" in disease_lc:
+                return "Tomato mold leaf"
+            if "mosaic virus" in disease_lc:
+                return "Tomato leaf mosaic virus"
+            if "yellow leaf curl virus" in disease_lc:
+                return "Tomato leaf yellow virus"
+            if "spider" in disease_lc and "mite" in disease_lc:
+                return "Tomato two spotted spider mites leaf"
+            if "septoria" in disease_lc:
+                return "Tomato Septoria leaf spot"
+            if "target spot" in disease_lc:
+                return "Tomato target spot leaf"
+        # pepper
+        if crop == "Bell_pepper" and "bacterial spot" in disease_lc:
+            return "Bell_pepper leaf spot"
+        # squash
+        if crop == "Squash" and "powdery mildew" in disease_lc:
+            return "Squash Powdery mildew leaf"
+        # grape
+        if crop.lower() == "grape" and "black rot" in disease_lc:
+            return "grape leaf black rot"
+        if crop.lower() == "grape" and ("isariopsis" in disease_lc or "leaf blight" in disease_lc):
+            return "grape leaf blight"
+        if crop.lower() == "grape" and ("esca" in disease_lc or "black measles" in disease_lc):
+            return "grape leaf black measles"
+        # peach
+        if crop == "Peach" and "bacterial spot" in disease_lc:
+            return "Peach leaf bacterial spot"
+        # orange
+        if crop == "Orange" and ("citrus greening" in disease_lc or "haunglongbing" in disease_lc):
+            return "Orange citrus greening leaf"
+        # fallback: '<crop> <disease> leaf'
+        norm = f"{crop} {disease}".strip()
+        if "leaf" not in norm.lower():
+            norm = f"{norm} leaf"
+        norm = re.sub(r"\s+", " ", norm).strip()
+        return norm
+    return raw
+
+
 def split_by_class(items: List[Path], ratios: Tuple[float, float, float], seed: int) -> Dict[Path, str]:
     # Stratify per parent class directory
     random.seed(seed)
@@ -175,7 +271,7 @@ def infer_health_and_disease(class_name: str) -> Tuple[bool, Optional[str]]:
     return False, None
 
 
-def build_caption_and_vqa(root: str, class_name: str, path: Path) -> List[dict]:
+def build_caption_and_vqa(root: str, class_name: str, path: Path, override: Optional[dict] = None) -> List[dict]:
     rel = str(path)
     base = path.name
     source = infer_source(base, root)
@@ -184,7 +280,12 @@ def build_caption_and_vqa(root: str, class_name: str, path: Path) -> List[dict]:
 
     items: List[dict] = []
     if root == "diseases":
-        healthy, disease = infer_health_and_disease(class_name)
+        if override is not None:
+            healthy = override.get("healthy", False)
+            disease = override.get("disease")
+            source = override.get("source", source)
+        else:
+            healthy, disease = infer_health_and_disease(class_name)
         # Captions
         if healthy:
             en = f"A healthy {crop} leaf."
@@ -249,7 +350,9 @@ def build_caption_and_vqa(root: str, class_name: str, path: Path) -> List[dict]:
     return items
 
 
-def build_dataset(roots: List[Path], ratios: Tuple[float, float, float], seed: int, out_path: Path) -> None:
+def build_dataset(roots: List[Path], ratios: Tuple[float, float, float], seed: int, out_path: Path,
+                  include_pp2020: bool = False, pp2020_root: Optional[Path] = None,
+                  include_pp2021: bool = False, pp2021_root: Optional[Path] = None) -> None:
     all_paths: List[Tuple[str, Path]] = []  # (root_name, path)
     for r in roots:
         if not r.exists():
@@ -267,16 +370,123 @@ def build_dataset(roots: List[Path], ratios: Tuple[float, float, float], seed: i
         m = split_by_class(items, ratios, seed)
         assign.update(m)
 
+    mapping = load_mapping()
+    # Optional enrichment for dataset paths (e.g., PP2021 multi-labels copied into datasets)
+    pp2021_map_path = Path('mappings/pp2021_dataset_labels.json')
+    pp2021_map = {}
+    if pp2021_map_path.exists():
+        try:
+            pp2021_map = json.loads(pp2021_map_path.read_text(encoding='utf-8'))
+        except Exception:
+            pp2021_map = {}
     with out_path.open("w", encoding="utf-8") as wf:
         for root_name, p in all_paths:
-            cls = p.parent.name
+            raw_cls = p.parent.name
+            cls = mapping.get(raw_cls, normalize_npd_class(raw_cls))
             split = assign.get(p, "train")
             entries = build_caption_and_vqa(root_name, cls, p)
             for e in entries:
                 e["split"] = split
                 # Store path relative to repo root
                 e["image"] = str(Path(e["image"]))
+                # enrich from dataset-level mappings if available
+                extra = pp2021_map.get(e["image"]) if root_name == 'diseases' else None
+                if extra is not None:
+                    e.setdefault('labels', {}).update({ 'pp2021': extra.get('pp2021') })
                 wf.write(json.dumps(e, ensure_ascii=False) + "\n")
+        # Optionally append Kaggle Plant Pathology datasets directly from sources/ via CSV (Scheme A)
+        if include_pp2020 and pp2020_root is not None and pp2020_root.exists():
+            import csv
+            csv_path = pp2020_root / "train.csv"
+            img_dir = pp2020_root / "images"
+            if csv_path.exists() and img_dir.exists():
+                imgs: List[Path] = []
+                meta: Dict[Path, dict] = {}
+                with csv_path.open() as f:
+                    r = csv.DictReader(f)
+                    for row in r:
+                        p = img_dir / f"{row['image_id']}.jpg"
+                        if not p.exists():
+                            continue
+                        if row.get('rust') == '1':
+                            cls = 'Apple rust leaf'
+                            healthy = False
+                            disease = 'Apple rust leaf'
+                        elif row.get('scab') == '1':
+                            cls = 'Apple Scab Leaf'
+                            healthy = False
+                            disease = 'Apple Scab Leaf'
+                        elif row.get('healthy') == '1':
+                            cls = 'Apple leaf'
+                            healthy = True
+                            disease = None
+                        else:
+                            cls = 'Apple leaf'
+                            healthy = False
+                            disease = None
+                        imgs.append(p)
+                        meta[p] = {
+                            'class': cls,
+                            'override': {'healthy': healthy, 'disease': disease, 'source': 'kd'},
+                            'pp2020': {
+                                'healthy': int(row.get('healthy') == '1'),
+                                'multiple_diseases': int(row.get('multiple_diseases') == '1'),
+                                'rust': int(row.get('rust') == '1'),
+                                'scab': int(row.get('scab') == '1'),
+                            },
+                        }
+                assign2 = split_by_class(imgs, ratios, seed)
+                for p in imgs:
+                    cls = meta[p]['class']
+                    override = meta[p]['override']
+                    entries = build_caption_and_vqa('diseases', cls, p, override=override)
+                    for e in entries:
+                        e['split'] = assign2.get(p, 'train')
+                        e['labels']['pp2020'] = meta[p]['pp2020']
+                        wf.write(json.dumps(e, ensure_ascii=False) + "\n")
+
+        if include_pp2021 and pp2021_root is not None and pp2021_root.exists():
+            import csv
+            csv_path = pp2021_root / 'train.csv'
+            img_dir = pp2021_root / 'train_images'
+            if csv_path.exists() and img_dir.exists():
+                imgs: List[Path] = []
+                meta: Dict[Path, dict] = {}
+                with csv_path.open() as f:
+                    r = csv.DictReader(f)
+                    for row in r:
+                        p = img_dir / row['image']
+                        if not p.exists():
+                            continue
+                        labels = row['labels'].split()
+                        is_healthy = ('healthy' in labels)
+                        if not is_healthy and set(labels) == {'rust'}:
+                            cls = 'Apple rust leaf'
+                            override = {'healthy': False, 'disease': 'Apple rust leaf', 'source': 'kd'}
+                            extra = {'multi_labels': labels}
+                        elif not is_healthy and set(labels) == {'scab'}:
+                            cls = 'Apple Scab Leaf'
+                            override = {'healthy': False, 'disease': 'Apple Scab Leaf', 'source': 'kd'}
+                            extra = {'multi_labels': labels}
+                        elif is_healthy and len(labels) == 1:
+                            cls = 'Apple leaf'
+                            override = {'healthy': True, 'disease': None, 'source': 'kd'}
+                            extra = {'multi_labels': labels}
+                        else:
+                            cls = 'Apple leaf'
+                            override = {'healthy': False, 'disease': None, 'source': 'kd'}
+                            extra = {'multi_labels': labels}
+                        imgs.append(p)
+                        meta[p] = {'class': cls, 'override': override, 'pp2021': extra}
+                assign3 = split_by_class(imgs, ratios, seed)
+                for p in imgs:
+                    cls = meta[p]['class']
+                    override = meta[p]['override']
+                    entries = build_caption_and_vqa('diseases', cls, p, override=override)
+                    for e in entries:
+                        e['split'] = assign3.get(p, 'train')
+                        e['labels']['pp2021'] = meta[p]['pp2021']
+                        wf.write(json.dumps(e, ensure_ascii=False) + "\n")
     print(f"Wrote JSONL: {out_path}")
 
 
@@ -288,6 +498,10 @@ def main(argv: List[str]) -> int:
     ap.add_argument("--val", type=float, default=0.1)
     ap.add_argument("--test", type=float, default=0.1)
     ap.add_argument("--seed", type=int, default=42)
+    ap.add_argument("--include-pp2020", action="store_true", help="Include Plant Pathology 2020 via CSV from sources/")
+    ap.add_argument("--pp2020-root", default="sources/plant-pathology-2020-fgvc7", help="Root dir for PP2020")
+    ap.add_argument("--include-pp2021", action="store_true", help="Include Plant Pathology 2021 via CSV from sources/")
+    ap.add_argument("--pp2021-root", default="sources/plant-pathology-2021-fgvc8", help="Root dir for PP2021")
     args = ap.parse_args(argv)
 
     if abs(args.train + args.val + args.test - 1.0) > 1e-6:
@@ -295,7 +509,16 @@ def main(argv: List[str]) -> int:
         return 2
     roots = [Path(r) for r in args.roots]
     out = Path(args.out)
-    build_dataset(roots, (args.train, args.val, args.test), args.seed, out)
+    build_dataset(
+        roots,
+        (args.train, args.val, args.test),
+        args.seed,
+        out,
+        include_pp2020=args.include_pp2020,
+        pp2020_root=Path(args.pp2020_root),
+        include_pp2021=args.include_pp2021,
+        pp2021_root=Path(args.pp2021_root),
+    )
     return 0
 
 

@@ -1,0 +1,17 @@
+{
+  "source_root": "sources/plant-pathology-2020-fgvc7/by_class",
+  "dest_root": "datasets/diseases",
+  "tag": "kd",
+  "created_dirs": [],
+  "existing_dirs_used": [
+    "Apple Scab Leaf",
+    "Apple leaf",
+    "Apple rust leaf"
+  ],
+  "counts_per_class": {
+    "Apple Scab Leaf": 592,
+    "Apple leaf": 607,
+    "Apple rust leaf": 622
+  },
+  "total_copied": 1821
+}
