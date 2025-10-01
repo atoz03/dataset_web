@@ -19,8 +19,9 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import shutil
+import subprocess
+import sys
 from collections import defaultdict
 from pathlib import Path
 
@@ -45,7 +46,19 @@ def main() -> None:
 
     if args.rename:
         # invoke the renamer so files have __<tag>__ pattern
-        os.system(f"python3 scripts/bulk_rename_by_class.py --root {src} --tag {args.tag} --force")
+        rename_script = Path(__file__).resolve().parent / "bulk_rename_by_class.py"
+        subprocess.run(
+            [
+                sys.executable,
+                str(rename_script),
+                "--root",
+                str(src),
+                "--tag",
+                args.tag,
+                "--force",
+            ],
+            check=True,
+        )
 
     report = {
         "source_root": str(src),
@@ -96,4 +109,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

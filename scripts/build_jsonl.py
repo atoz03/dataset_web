@@ -61,6 +61,7 @@ CROP_ZH: Dict[str, str] = {
     "Raspberry": "覆盆子",
     "Rice": "稻",
     "Soyabean": "大豆",
+    "Soybean": "大豆",
     "Squash": "南瓜",
     "Strawberry": "草莓",
     "Sugarcane": "甘蔗",
@@ -84,6 +85,7 @@ CROP_ZH: Dict[str, str] = {
     "pineapple": "菠萝",
     "rice": "稻",
     "soyabean": "大豆",
+    "soybean": "大豆",
     "sugarcane": "甘蔗",
     "sunflower": "向日葵",
     "tea": "茶树",
@@ -110,6 +112,7 @@ DISEASE_TOKENS = {
     "blast": "稻瘟病",
     "septoria": "叶斑病(Septoria)",
     "mold": "霉病",
+    "scab": "痂病",
 }
 
 
