@@ -1,5 +1,9 @@
-# 忽略数据集
+# 忽略本地大数据目录与派生文件
 datasets/
+sources/
+*.zip
+*.tar
+data*.jsonl
 
 # 忽略Python虚拟环境
 .venv/

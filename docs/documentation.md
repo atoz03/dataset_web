@@ -143,6 +143,11 @@ datasets/
     -   按类别进行分层抽样，划分 `train`, `val`, `test` 集。
     -   解析文件名，生成丰富的 `labels` 信息。
     -   基于病害关键字（`blight`, `rust`, `spot`, `mildew`, `virus`, `mite`, `rot`, `bacterial`, `blast`, `septoria`, `mold`, `scab` 等）推断健康与病害字段。
+    -   额外支持：
+        -   识别 `__kd__` 来源标签。
+        -   规范化 New Plant Diseases 风格类名（如 `Apple___healthy` → `Apple leaf`）。
+        -   直接解析 `Plant Pathology 2020/2021` 的 CSV，并在 `labels.pp2020`/`labels.pp2021.multi_labels` 中保留原始标签。
+    -   额外支持：识别 `__kd__` 来源标签；对 `New Plant Diseases` 风格类名（如 `Apple___healthy`、`Corn_(maize)___Common_rust_`）进行规范化（优先使用 `mappings/consolidated_mapping.json`，否则使用内置规则映射到本体，如 `Apple leaf`、`Corn rust leaf`、`Tomato mold leaf` 等）。
 -   **示例命令**:
     ```bash
     python3 scripts/build_jsonl.py \
@@ -227,7 +232,143 @@ datasets/
 6.  **Top Agriculture Crop Disease**: [Kaggle Link](https://www.kaggle.com/datasets/kamal01/top-agriculture-crop-disease)
 7.  **140-most-popular-crops-image-dataset**: [Kaggle Link](https://www.kaggle.com/datasets/omrathod2003/140-most-popular-crops-image-dataset)
 8.  **PlantVillage Dataset**: [Kaggle Link](https://www.kaggle.com/datasets/abdallahalidev/plantvillage-dataset) (License: CC BY-NC-SA 4.0)
-9.  **New Plant Diseases / Plant Pathology (预留)**: Kaggle 竞赛数据集。
+9.  **New Plant Diseases / Plant Pathology**: Kaggle 数据与竞赛数据集汇总（见下方专节）。
+
+### A.1.x Kaggle: New Plant Diseases / Plant Pathology（补全）
+
+本节补全并规范化 Kaggle 病害相关数据源的接入方式，包括“New Plant Diseases Dataset (New PlantVillage)”与两届 Plant Pathology 竞赛数据集。
+
+— 概览
+
+- 统一来源标签: 使用 `__kd__`（Kaggle diseases）。
+- 目标根目录: `datasets/diseases/`。
+- 命名规范: `<标准类名>__kd__<uuid>.<ext>`（参见 2.2）。
+
+— 数据链接与许可
+
+- New Plant Diseases Dataset: [Kaggle Datasets](https://www.kaggle.com/datasets/alicelabs/new-plant-diseases-dataset)。若不可用，可使用替代来源 [vipoooool/new-plant-diseases-dataset](https://www.kaggle.com/datasets/vipoooool/new-plant-diseases-dataset)。
+- Plant Pathology 2020 - FGVC7: [Kaggle Competitions](https://www.kaggle.com/competitions/plant-pathology-2020-fgvc7)
+- Plant Pathology 2021 - FGVC8: [Kaggle Competitions](https://www.kaggle.com/competitions/plant-pathology-2021-fgvc8)
+- License/Citation: 以各 Kaggle 页面声明为准；下载与使用前请确认是否允许非商业/学术用途，并在 `origin.md` 中补充 License 与 Citation 字段（见 TODO）。
+
+— 下载与解压
+
+1) New Plant Diseases Dataset（Datasets 接口）
+
+```bash
+# 需要已配置 kaggle CLI 与 ~/.kaggle/kaggle.json
+python3 scripts/fetch_kaggle_datasets.py \
+  --slug alicelabs/new-plant-diseases-dataset \
+  --unzip
+# 若上面 slug 不可用，可改用：
+python3 scripts/fetch_kaggle_datasets.py \
+  --slug vipoooool/new-plant-diseases-dataset \
+  --unzip
+# 输出目录：sources/new-plant-diseases-dataset/
+```
+
+2) Plant Pathology 2020/2021（Competitions 接口）
+
+```bash
+# 需要登录并接受竞赛条款
+kaggle competitions download -c plant-pathology-2020-fgvc7 -p sources/plant-pathology-2020-fgvc7
+unzip -o -q sources/plant-pathology-2020-fgvc7/*.zip -d sources/plant-pathology-2020-fgvc7
+
+kaggle competitions download -c plant-pathology-2021-fgvc8 -p sources/plant-pathology-2021-fgvc8
+unzip -o -q sources/plant-pathology-2021-fgvc8/*.zip -d sources/plant-pathology-2021-fgvc8
+```
+
+— 目录结构与合并策略
+
+1) New Plant Diseases Dataset（通常为类目录 → 图像文件的层级）
+
+- 步骤 A：可选的就地重命名，使源目录文件名符合 `<类>__kd__<uuid>.<ext>` 模式，便于去重与追溯。
+
+```bash
+python3 scripts/bulk_rename_by_class.py \
+  --root sources/new-plant-diseases-dataset \
+  --tag kd --force
+```
+
+- 步骤 B：拷贝合并到 `datasets/diseases/`（仅拷贝，不移动）。
+
+```bash
+python3 scripts/merge_kaggle_disease.py \
+  --src sources/new-plant-diseases-dataset \
+  --dst datasets/diseases \
+  --tag kd --rename
+# 生成 mappings/new-plant-diseases-dataset_merge_report.json
+```
+
+- 步骤 C：若出现新类名或拼写差异，请在 `mappings/consolidated_mapping.json` 中补充映射，统一至本体（见附录 B）。
+
+2) Plant Pathology 2020（Apple 单作物，标签列：healthy / multiple_diseases / rust / scab）
+
+- 数据特点：图像位于 `train_images/` 等目录，类别信息在 `train.csv` 中；存在 `multiple_diseases` 复合标签。
+- 合并建议（与本体对齐）：
+  - `healthy` → `Apple leaf`
+  - `rust` → `Apple rust leaf`
+  - `scab` → `Apple Scab Leaf`
+  - `multiple_diseases` → 暂不单独建类。建议并入 `Apple leaf`，并在后续 `JSONL` 生成时将 `labels.healthy` 标记为 `false`（用于下游分析区分）。
+- 实施步骤（方案 A 推荐）：无需目录级合并，直接在 `build_jsonl.py` 中读取 `train.csv`，将 `healthy/rust/scab/multiple_diseases` 解析为：
+  - `healthy` → `Apple leaf` 且 `labels.healthy=true`
+  - `rust` → `Apple rust leaf` 且 `labels.healthy=false`
+  - `scab` → `Apple Scab Leaf` 且 `labels.healthy=false`
+  - `multiple_diseases` → `Apple leaf` 且 `labels.healthy=false`，并在 `labels.pp2020` 中保留原始四列标记
+ 运行示例：
+```bash
+python3 scripts/build_jsonl.py \
+  --roots datasets/diseases datasets/crops datasets/pests \
+  --include-pp2020 --pp2020-root sources/plant-pathology-2020-fgvc7 \
+  --out data.jsonl --train 0.8 --val 0.1 --test 0.1 --seed 42
+```
+
+```bash
+# 伪代码（建议后续实现为 scripts/prepare_plant_pathology_2020.py）
+# 读取 sources/plant-pathology-2020-fgvc7/train.csv，按映射复制 train_images/* 到：
+#  datasets/diseases/Apple leaf/
+#  datasets/diseases/Apple rust leaf/
+#  datasets/diseases/Apple Scab Leaf/
+# 对于 multiple_diseases：复制到 datasets/diseases/Apple leaf/ 并在 JSONL 阶段标记 healthy=false。
+```
+
+3) Plant Pathology 2021（多标签/细粒度，苹果叶病害扩展）
+
+- 数据特点：更细粒度且多标签样本占比更高。直接拆分到单一类目录会造成重复拷贝或信息丢失。
+- 合并建议（方案 A 推荐）：
+  - 暂不目录级合并；在 `scripts/build_jsonl.py` 中直接解析 `train.csv` 的多标签字段 `labels`，将 rust/scab 的单标签样本规范到本体类（`Apple rust leaf` / `Apple Scab Leaf`），其余多标签统一记为 `Apple leaf` 且 `labels.healthy=false`。
+  - 在 `labels.pp2021.multi_labels` 中完整保留原始标签列表。
+ 运行示例：
+```bash
+python3 scripts/build_jsonl.py \
+  --roots datasets/diseases datasets/crops datasets/pests \
+  --include-pp2021 --pp2021-root sources/plant-pathology-2021-fgvc8 \
+  --out data.jsonl --train 0.8 --val 0.1 --test 0.1 --seed 42
+```
+
+— 清洗与索引（统一流程）
+
+```bash
+# （可选）清洗：最小尺寸、模糊、近重复
+python3 scripts/deduplicate_images.py \
+  --roots datasets/diseases \
+  --min-width 224 --min-height 224 \
+  --blur-threshold 60 --ham-threshold 3 \
+  --action move
+
+# 生成多模态索引 JSONL（会解析来源标签 kd/CD/PD 等；并可直接包含 Plant Pathology 2020/2021）
+python3 scripts/build_jsonl.py \
+  --roots datasets/diseases datasets/crops datasets/pests \
+  --include-pp2020 --pp2020-root sources/plant-pathology-2020-fgvc7 \
+  --include-pp2021 --pp2021-root sources/plant-pathology-2021-fgvc8 \
+  --out data.jsonl --train 0.8 --val 0.1 --test 0.1 --seed 42
+```
+
+— 注意事项
+
+- 对于来源自竞赛的 CSV 标签，请在生成 JSONL 时保留关键信息（如是否 `multiple_diseases`），并通过 `labels` 字段存档，维持可追溯性。
+- 若引入了非本体类名（例如“Apple multiple diseases”），请在 `mappings/consolidated_mapping.json` 中将其映射到现有标准类（如 `Apple leaf`），并在 JSONL 的 `labels` 中额外记录复合/异常标记。
+- 完成合并后，请在 `origin.md` 中登记 License/Citation，并在 A.2 中更新处理日志及统计报告路径。
 
 ### A.2 关键合并与处理日志
 
@@ -241,6 +382,15 @@ datasets/
     -   **PlantDoc 合并**: 从 GitHub 下载 `PlantDoc-Dataset`，使用 `scripts/bulk_rename_by_class.py` 添加 `__pd__` 标签后，按类名拷贝 2,572 张图片到 `datasets/diseases/`。
     -   **PlantVillage 合并**: 从 Kaggle 下载 `abdallahalidev/plantvillage-dataset`，选用 `color/` 版本，规范化类名后，使用 `scripts/bulk_rename_by_class.py` 添加 `__kd__` 标签，并用 `scripts/merge_kaggle_disease.py` 合并 46,072 张图片到 `datasets/diseases/`。
     -   **命名校准**: 发现并处理了 `Soyabean leaf` vs `Soybean leaf` 等拼写不一致问题。通过 MD5 去重后，将唯一图片迁移到统一的类名下，并移除了空目录。
+
+-   **2025-10-01**:
+    -   **New Plant Diseases (vipoooool) 合并**: 使用 `scripts/fetch_kaggle_datasets.py` 下载 `vipoooool/new-plant-diseases-dataset`，重命名 `train/` 与 `valid/` 下的全部文件为 `<类>__kd__<uuid>.<ext>`，并用 `scripts/merge_kaggle_disease.py` 拷贝至 `datasets/diseases/`。
+        -   统计: `train` 70,295 张，`valid` 17,572 张，共 87,867 张；生成 `mappings/train_merge_report.json`, `mappings/valid_merge_report.json`。
+        -   说明: `test/` 保留在 `sources/`，供后续实验使用。
+    -   **Plant Pathology 2020 下载与合并**: 使用 `kaggle competitions download -c plant-pathology-2020-fgvc7` 下载并解压；依据 `train.csv` 将图像按映射 `healthy→Apple leaf`, `rust→Apple rust leaf`, `scab→Apple Scab Leaf` 整理到临时类目录，重命名并合并至 `datasets/diseases/`，来源标签 `__kd__`。
+        -   统计: 合并 1,821 张；生成 `mappings/by_class_merge_report.json`。
+        -   说明: `multiple_diseases` 样本归入 `Apple leaf`，后续在 JSONL 阶段将 `labels.healthy=false` 以区分。
+    -   **Plant Pathology 2021 下载**: 使用 `kaggle competitions download -c plant-pathology-2021-fgvc8` 下载并解压至 `sources/plant-pathology-2021-fgvc8/`。该数据为多标签，暂不目录级合并，计划在 `build_jsonl.py` 中直接解析 `train.csv` 产出 JSONL。
 
 ---
 
