@@ -142,6 +142,7 @@ datasets/
     -   根据文件名和中英文对照表，自动生成中英双语的 **Caption** 和 **VQA** 样本。
     -   按类别进行分层抽样，划分 `train`, `val`, `test` 集。
     -   解析文件名，生成丰富的 `labels` 信息。
+    -   基于病害关键字（`blight`, `rust`, `spot`, `mildew`, `virus`, `mite`, `rot`, `bacterial`, `blast`, `septoria`, `mold`, `scab` 等）推断健康与病害字段。
 -   **示例命令**:
     ```bash
     python3 scripts/build_jsonl.py \
@@ -319,7 +320,7 @@ datasets/
     -   `papaya`: 木瓜
     -   `pineapple`: 菠萝
     -   `rice`: 稻（大米）
-    -   `soyabean`: 大豆
+    -   `soyabean`: 大豆（脚本同时识别 `soybean` 变体）
     -   `sugarcane`: 甘蔗
     -   `sunflower`: 向日葵
     -   `tea`: 茶树
@@ -331,7 +332,7 @@ datasets/
     -   `ants`: 蚂蚁
     -   `bees`: 蜜蜂
     -   `beetle`: 甲虫
-    -   `catterpillar`: 毛虫（鳞翅目幼虫）
+    -   `caterpillar`: 毛虫（鳞翅目幼虫）
     -   `earthworms`: 蚯蚓
     -   `earwig`: 蠼螋
     -   `grasshopper`: 蝗虫
