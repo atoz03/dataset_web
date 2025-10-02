@@ -101,6 +101,22 @@ scraped_images/
 ```
 图片已经按照搜索词自动分好类了。
 
+### 第 4.2 步：预清洗与去重（推荐）
+
+在人工审核前，可对 `scraped_images/` 执行一次尺寸/模糊/重复清理，减少明显低质或重复样本；近重复建议按“类级别”分组，以便跨来源（如 `bing.com` 与 `gbif_occurrences`）对比：
+
+```bash
+# 在仓库根目录执行（使用同一套脚本）
+source .venv/bin/activate  # 如已创建
+python scripts/deduplicate_images.py \
+  --roots web_scraper/scraped_images \
+  --min-width 224 --min-height 224 \
+  --blur-threshold 60 --ham-threshold 3 \
+  --near-scope class --action move
+```
+
+上述命令会将待删除的文件安全移动到 `web_scraper/scraped_images/.trash/`，可复核后再做最终处理。
+
 ### 第 4.1 步：扩展站点配置（可选）
 
 `site_configs/agriculture_sites.json` 采用列表形式描述每个农业站点或开放 API 的解析方式。核心字段说明如下：

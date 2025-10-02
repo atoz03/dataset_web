@@ -29,12 +29,12 @@ from typing import Dict, Iterable, List, Tuple
 
 try:
     from PIL import Image, ImageFilter
-except Exception as e:  # pragma: no cover
+except ImportError:  # pragma: no cover
     Image = None  # type: ignore
 
 try:
     import numpy as np  # type: ignore
-except Exception:  # pragma: no cover
+except ImportError:  # pragma: no cover
     np = None  # type: ignore
 
 
@@ -76,7 +76,11 @@ def phash(img: "Image.Image", hash_size: int = 8, highfreq_factor: int = 4) -> i
 
 
 def hamming(a: int, b: int) -> int:
-    return (a ^ b).bit_count()
+    x = a ^ b
+    try:
+        return x.bit_count()  # Python 3.10+
+    except AttributeError:  # Fallback for older Python
+        return bin(x).count("1")
 
 
 def laplacian_var(img: "Image.Image") -> float:

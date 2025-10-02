@@ -136,6 +136,15 @@ datasets/
         --ham-threshold 0 --action move
     # 按来源/类分批（示例）
     python3 scripts/deduplicate_images.py --roots datasets/diseases/Apple\ leaf --ham-threshold 3 --action move
+
+-   针对爬虫抓取目录（如 `web_scraper/scraped_images`），建议在近重复检测时使用“按类分组”范围以跨来源去重（例如 `bing.com` 与 `gbif_occurrences` 之间）：
+    ```bash
+    python3 scripts/deduplicate_images.py \
+        --roots web_scraper/scraped_images \
+        --min-width 224 --min-height 224 \
+        --blur-threshold 60 --ham-threshold 3 \
+        --near-scope class --action move
+    ```
     ```
 
 ### 第 3.4 步：人工核验（网页）
