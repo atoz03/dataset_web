@@ -34,6 +34,15 @@
 pip install -r requirements.txt
 ```
 
+可选：将运行配置写入 `.env`（已被 `.gitignore` 忽略，避免密钥泄露）：
+
+```bash
+echo "VLM_API_KEY=sk-your-api-key-here" >> .env
+echo "VLM_API_BASE=https://xxx" >> .env
+echo "VLM_MODEL=gemini-2.5-flash" >> .env
+```
+然后 `export $(grep -v '^#' .env | xargs)` 载入。
+
 ---
 
 ## 数据集架构
@@ -95,6 +104,26 @@ python3 scripts/deduplicate_images.py \
     --action move
 ```
 
+### 第 3.5 步：LLM 语义验证与描述增强（可选，推荐）
+
+利用多模态大模型（VLM）对图像进行语义一致性校验与描述增强（详情见 `llm_tools/README.md`）。
+
+```bash
+# 干跑：仅日志，不改动文件（服务端证书未完善时建议加 --insecure）
+python3 llm_tools/verify_and_describe.py \
+  --root datasets/diseases \
+  --action dry-run \
+  --insecure
+
+# 实际运行：接受的图片旁生成 <image>.json 描述，拒绝项移动到 .rejected_by_llm/
+python3 llm_tools/verify_and_describe.py \
+  --root datasets/diseases \
+  --model gemini-2.5-flash \
+  --insecure
+```
+
+提示：当前服务端证书链未完善时需使用 `--insecure` 或设置 `VLM_VERIFY_SSL=false`；修复后移除该选项以恢复 TLS 校验。
+
 ### 第 4 步：生成数据索引 (JSONL)
 
 为清洗干净的数据集生成包含多模态标注的 `JSONL` 索引文件。该脚本会自动生成 Caption 和 VQA 样本，并划分训练/验证/测试集。
@@ -121,6 +150,19 @@ python3 scripts/build_jsonl.py \
 -   `labels`: 包含类别、作物、病害、来源等详细信息的对象。
 
 一个 [`data.sample.jsonl`](data.sample.jsonl) 文件已包含在仓库中，可供查阅。
+
+---
+
+## LLM 配置速览
+
+- 环境变量（可用 CLI 覆盖）：
+  - `VLM_API_KEY`（必填）：VLM 服务的 API Key。
+  - `VLM_API_BASE`：默认 `https://xxx`。
+  - `VLM_MODEL`：默认 `gemini-2.5-flash`。
+  - `VLM_TIMEOUT`：默认 `120` 秒。
+  - `VLM_VERIFY_SSL`：`true|false`（默认为 `true`）。
+- CLI 常用参数：`--api-key`、`--api-base`、`--model`、`--timeout`、`--insecure`、`--action`、`--no-metadata`。
+- 日志说明与示例命令：参见 `llm_tools/README.md` 的“日志（Logs）”章节。
 
 ---
 

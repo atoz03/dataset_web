@@ -158,6 +158,32 @@ datasets/
         --api-key "your-vlm-api-key"
     ```
 
+#### 3.5.1 XMDBD 集成摘要（LLM Tools）
+
+- 概览
+  - 使用 XMDBD/OpenAI 兼容接口替换了模拟客户端，支持图像+文本输入与 JSON 对象输出。
+  - 对每张图像执行：类别一致性校验、质量评分、双语描述生成。
+
+- 配置项（环境变量优先，CLI 可覆盖）
+  - `VLM_API_KEY`（必填）：访问密钥；建议写入 `.env`，避免提交到 git。
+  - `VLM_API_BASE`：默认 `https://xmdbd.online/v1`。
+  - `VLM_MODEL`：默认 `gemini-2.5-flash`。
+  - `VLM_TIMEOUT`：请求超时秒数，默认 `120`。
+  - `VLM_VERIFY_SSL`：`true|false`，默认为 `true`；若服务端证书链未完善，可设为 `false` 或在 CLI 使用 `--insecure`。
+
+- 运行示例
+  - 干跑（不改动文件）：
+    - `python3 llm_tools/verify_and_describe.py --root datasets/diseases --action dry-run --insecure`
+  - 实际执行（接受即写 `.json` 元数据，拒绝移动/删除）：
+    - `python3 llm_tools/verify_and_describe.py --root datasets/diseases --model gemini-2.5-flash --insecure`
+
+- 日志要点
+  - 默认 `INFO` 级别；输出 `ACCEPTED/REJECTED` 与原因；dry-run 模式会显示“将要移动”的目标路径。
+  - 常见问题：
+    - 缺少密钥：设置 `VLM_API_KEY` 或传 `--api-key`。
+    - TLS 证书错误：在证书修复前使用 `--insecure` 或 `VLM_VERIFY_SSL=false`；修复后应恢复校验。
+    - 非 JSON 响应：客户端强制 `response_format=json_object`，若仍不规范会记录 `VLMAPIError`。
+
 ### 第 4 步：生成数据索引 (JSONL)
 
 -   **目的**: 为清洗干净的数据集生成包含多模态标注的 `JSONL` 索引文件。
