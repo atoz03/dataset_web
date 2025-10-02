@@ -144,7 +144,7 @@ def collect_images(root: Path) -> List[Path]:
 
 
 def cleanup_root(root: Path, min_w: int, min_h: int, blur_thr: float, action: str,
-                 ham_thr: int) -> Stats:
+                 ham_thr: int, near_scope: str = "dir") -> Stats:
     stats = Stats()
     images = collect_images(root)
     stats.total = len(images)
@@ -226,11 +226,26 @@ def cleanup_root(root: Path, min_w: int, min_h: int, blur_thr: float, action: st
                 stats.removed_dupe += 1
                 removed.add(q)
     else:
-        # Near-duplicate within the same parent directory to limit complexity
-        by_dir: Dict[Path, List[Tuple[Path, int]]] = defaultdict(list)
+        # Near-duplicate grouping scope
+        # - dir: only within the same immediate parent directory (default)
+        # - class: within first-level directory under the given root (helps cross-source dedupe like scraped_images/<class>/<source>)
+        # - root: compare across the entire root (may be expensive)
+        groups: Dict[Path, List[Tuple[Path, int]]] = defaultdict(list)
         for p, hv in kept:
-            by_dir[p.parent].append((p, hv))
-        for d, items in by_dir.items():
+            if near_scope == "root":
+                key = root
+            elif near_scope == "class":
+                try:
+                    rel = p.relative_to(root)
+                    # group by top-level directory under root when available
+                    top = rel.parts[0] if len(rel.parts) >= 1 else None
+                    key = (root / top) if top else p.parent
+                except Exception:
+                    key = p.parent
+            else:  # "dir"
+                key = p.parent
+            groups[key].append((p, hv))
+        for d, items in groups.items():
             n = len(items)
             items.sort(key=lambda x: x[0].name)
             for i in range(n):
@@ -265,6 +280,8 @@ def main(argv: List[str]) -> int:
     ap.add_argument("--min-height", type=int, default=224)
     ap.add_argument("--blur-threshold", type=float, default=60.0, help="Lower means blurrier")
     ap.add_argument("--ham-threshold", type=int, default=0, help="Hamming threshold for near-duplicate removal")
+    ap.add_argument("--near-scope", choices=["dir", "class", "root"], default="dir",
+                    help="Scope for near-duplicate grouping: dir (default), class (first directory under root), or root (global)")
     ap.add_argument("--action", choices=["move", "delete"], default="move")
     args = ap.parse_args(argv)
 
@@ -275,7 +292,7 @@ def main(argv: List[str]) -> int:
             print(f"[WARN] Skip missing root: {root}")
             continue
         print(f"== Cleaning {root} ==")
-        st = cleanup_root(root, args.min_width, args.min_height, args.blur_threshold, args.action, args.ham_threshold)
+        st = cleanup_root(root, args.min_width, args.min_height, args.blur_threshold, args.action, args.ham_threshold, args.near_scope)
         print(f"  Total: {st.total} | Small: {st.removed_small} | Blur: {st.removed_blur} | Dupe: {st.removed_dupe} | Errors: {st.errors}")
         overall.total += st.total
         overall.removed_small += st.removed_small

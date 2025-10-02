@@ -23,9 +23,47 @@
       "Rice brown spot": "Bipolaris oryzae",
       "Tomato leaf mosaic virus": "Tomato mosaic virus",
       "Wheat brown rust": "Puccinia triticina",
-      "grape leaf black rot": "Guignardia bidwellii"
+      "grape leaf black rot": "Guignardia bidwellii",
+      "ants": "Formicidae",
+      "bees": "Apidae",
+      "beetle": "Coleoptera",
+      "caterpillar": "Noctuidae",
+      "earthworms": "Lumbricidae",
+      "earwig": "Dermaptera",
+      "grasshopper": "Acrididae",
+      "moth": "Spodoptera frugiperda",
+      "slug": "Gastropoda",
+      "snail": "Cornu aspersum",
+      "wasp": "Vespidae",
+      "weevil": "Curculionidae"
     },
     "max_results_per_keyword": 600,
-    "media_domains": ["inaturalist-open-data.s3.amazonaws.com", "static.inaturalist.org"]
+    "media_domains": [
+      "inaturalist-open-data.s3.amazonaws.com",
+      "static.inaturalist.org"
+    ]
+  },
+  {
+    "name": "wikimedia_commons",
+    "type": "commons",
+    "base_url": "https://commons.wikimedia.org/w/api.php",
+    "search": {
+      "params": {
+        "action": "query",
+        "format": "json",
+        "origin": "*",
+        "generator": "search",
+        "gsrnamespace": 6,
+        "gsrsearch": "",
+        "gsrlimit": 50,
+        "prop": "imageinfo",
+        "iiprop": "url|extmetadata",
+        "iiurlwidth": 1024,
+        "iiurlheight": 1024
+      },
+      "max_pages": 2,
+      "offset_param": "gsroffset"
+    },
+    "max_results_per_keyword": 60
   }
 ]

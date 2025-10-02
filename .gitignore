@@ -39,3 +39,8 @@ web-bundles/
 # 忽略爬虫输出
 web_scraper/scraped_images/
 web_scraper/agri_sites_run.log
+tmp/http_8000.log
+.gitignore
+tmp/http_8000.pid
+web_scraper/pest_review_manifest.js
+web_scraper/site_configs/wikimedia_only.json

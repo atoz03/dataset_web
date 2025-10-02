@@ -139,9 +139,77 @@ scraped_images/
 - **扩大关键词覆盖**: 在 `web_scraper/keywords.txt` 中追加尚未覆盖的病害/虫害或作物学名，对命中率较低的条目补充 `site_configs/agriculture_sites.json` 的 `keyword_overrides`，确保能映射到 GBIF 可识别的学名。
 - **提升抓取规模**: 在确认网络和许可允许的情况下，逐步提高 `scrapy crawl agri_sites` 的 `max_api_results` 或配置中的 `query.max_pages`，并拆分多批运行以避免一次性请求过大。
 - **扩展数据源**: 若获取到允许采集的额外 API，可在 `site_configs/agriculture_sites.json` 新增条目，配置 `media_domains`、限速和分页策略；记得更新 README 与开发日志记录数据来源和使用条款。
-- **质量监控**: 每轮采集结束后审查 `web_scraper/agri_sites_run.log` 与 `scraped_images/*/gbif_occurrences/`，针对许可证（`license`）、作者（`creator`/`rights_holder`）或 robots 拒绝情况及时调整配置。
+ - **质量监控**: 每轮采集结束后审查 `web_scraper/agri_sites_run.log` 与 `scraped_images/*/gbif_occurrences/`，针对许可证（`license`）、作者（`creator`/`rights_holder`）或 robots 拒绝情况及时调整配置。
 
  ---
+
+## 人工审核与并入（Pests 工作流）
+
+为确保害虫图片质量与合规性，提供一套“离线网页审核 → 脚本导入”的流程。
+
+### 1) 生成/刷新清单
+
+抓取完成后，生成 `web_scraper/pest_review_manifest.js`（页面的数据源）。若需刷新，可在仓库根目录执行：
+
+```bash
+python3 - <<'PY'
+import hashlib, json
+from pathlib import Path
+pests = ["ants","bees","beetle","caterpillar","earthworms","earwig",
+         "grasshopper","moth","slug","snail","wasp","weevil"]
+root = Path('.').resolve()
+items = []
+for k in pests:
+    d = root/"web_scraper"/"scraped_images"/k
+    if not d.exists():
+        continue
+    for img in d.rglob('*'):
+        if img.suffix.lower() in {'.jpg','.jpeg','.png'}:
+            rel = img.relative_to(root).as_posix()
+            items.append({
+                'id': hashlib.sha1(rel.encode()).hexdigest(),
+                'keyword': k,
+                'source': img.parent.name,
+                'path': rel,
+            })
+items.sort(key=lambda x: (x['keyword'], x['path']))
+(root/"web_scraper"/"pest_review_manifest.js").write_text(
+    "const pestReviewManifest = " + json.dumps(items, indent=2) + ";\n"
+)
+print("entries:", len(items))
+PY
+```
+
+### 2) 打开审核页面
+
+启动本地静态服务，确保相对路径生效：
+
+```bash
+python3 -m http.server 8000
+# 在浏览器访问
+http://localhost:8000/docs/pest_manual_review.html
+```
+
+页面功能：
+
+- 按类别筛选，逐张标记“通过/剔除/重置”；
+- 支持导入/导出 JSON，决策同时保存在 `localStorage`；
+- 无法看到图片时，请确认：
+  - `web_scraper/pest_review_manifest.js` 是否存在且包含条目；
+  - 是否通过本地服务以“仓库根目录”为站点根访问页面（`/docs/...`）；
+  - 试用系统浏览器，避免 IDE 预览禁用本地脚本。
+
+### 3) 导入审核通过的图片
+
+使用 `scripts/import_reviewed_pests.py`：
+
+```bash
+python3 scripts/import_reviewed_pests.py \
+    --review-json path/to/pest_review_YYYY-mm-dd.json \
+    --tag web
+```
+
+脚本会把 `accepted` 条目拷贝到 `datasets/pests/<class>/`，自动重命名并进行尺寸/模糊/重复清理（安全移动至 `.trash/`）。
 
 ## 开发日志
 
