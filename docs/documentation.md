@@ -138,6 +138,76 @@ datasets/
     python3 scripts/deduplicate_images.py --roots datasets/diseases/Apple\ leaf --ham-threshold 3 --action move
     ```
 
+### 第 3.4 步：人工核验（网页）
+
+- 目的: 在并入主数据集前进行人工快速抽查/核验，剔除无关或版权不明的图片。
+- 页面: `docs/pest_manual_review.html`（离线单页，本地浏览器即可打开）。
+- 数据源: `web_scraper/pest_review_manifest.js`（清单自动生成，包含待审图片的相对路径、来源和类别）。
+
+- 打开方式（推荐其一）:
+  - 本地静态服务方式（推荐，避免 IDE 预览屏蔽脚本/本地文件）:
+    ```bash
+    # 在仓库根目录启动
+    python3 -m http.server 8000
+    # 浏览器访问
+    http://localhost:8000/docs/pest_manual_review.html
+    ```
+  - 直接用系统浏览器打开 `docs/pest_manual_review.html`（某些 IDE 的内置预览可能禁用本地脚本/图片访问，若看不到图片请改用上面的本地服务方式）。
+
+- 如果打开后没有任何图片:
+  - 核对 `web_scraper/pest_review_manifest.js` 是否存在且包含条目（文件首行应为 `const pestReviewManifest = [...]`）。
+  - 若你在这次抓取后尚未生成清单，可在仓库根目录执行下方脚本重新生成：
+    ```bash
+    python3 - <<'PY'
+    import hashlib, json
+    from pathlib import Path
+    pests = ["ants","bees","beetle","caterpillar","earthworms","earwig",
+             "grasshopper","moth","slug","snail","wasp","weevil"]
+    root = Path('.').resolve()
+    items = []
+    for k in pests:
+        d = root/"web_scraper"/"scraped_images"/k
+        if not d.exists():
+            continue
+        for img in d.rglob('*'):
+            if img.suffix.lower() in {'.jpg','.jpeg','.png'}:
+                rel = img.relative_to(root).as_posix()
+                items.append({
+                    'id': hashlib.sha1(rel.encode()).hexdigest(),
+                    'keyword': k,
+                    'source': img.parent.name,
+                    'path': rel,
+                })
+    items.sort(key=lambda x: (x['keyword'], x['path']))
+    (root/"web_scraper"/"pest_review_manifest.js").write_text(
+        "const pestReviewManifest = " + json.dumps(items, indent=2) + ";\n"
+    )
+    print("entries:", len(items))
+    PY
+    ```
+  - 确认以“仓库根目录”为站点根访问页面（例如通过 `http://localhost:8000/docs/...`），否则相对路径 `../web_scraper/...` 可能无法被服务器解析。
+  - 更换到系统浏览器（Safari/Chrome/Edge 等），避免 IDE 预览禁止执行本地脚本导致清单未加载。
+
+- 使用方法:
+  - 顶部下拉选择“类别”，逐张标记“通过/剔除/重置”。
+  - 支持导入/导出 JSON：页面会把决策持久化到浏览器 `localStorage`，点击“下载审核结果 JSON”用于后续脚本。
+  - 审核完成后，使用第 3.4.1 步的脚本并入主数据集。
+
+#### 第 3.4.1 步：导入审核通过的害虫图片
+
+- 脚本: `scripts/import_reviewed_pests.py`
+- 作用:
+  - 读取你从页面导出的 JSON，筛选 `status == accepted` 的条目；
+  - 拷贝到 `datasets/pests/<class>/`；
+  - 调用 `scripts/bulk_rename_by_class.py` 统一文件名并写入来源标签（默认 `web`）；
+  - 调用 `scripts/deduplicate_images.py` 做尺寸/模糊/重复清理（安全移动到 `.trash/`）。
+- 示例命令:
+  ```bash
+  python3 scripts/import_reviewed_pests.py \
+      --review-json path/to/pest_review_YYYY-mm-dd.json \
+      --tag web
+  ```
+
 ### 第 3.5 步：LLM 语义验证与描述增强 (可选，推荐)
 
 -   **目的**: 在大规模生成标注前，利用多模态大模型（VLM）对图像进行最后一次智能审核，确保内容与标签匹配，并生成更丰富的描述。

@@ -1,0 +1,13 @@
+# Pest-specific keywords derived from consolidated mapping
+ants
+bees
+beetle
+caterpillar
+earthworms
+earwig
+grasshopper
+moth
+slug
+snail
+wasp
+weevil

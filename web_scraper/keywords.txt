@@ -13,3 +13,39 @@ Zea mays
 Phytophthora infestans
 Wheat brown rust
 grape leaf black rot
+Corn rust leaf
+Tomato Early blight leaf
+Tomato Septoria leaf spot
+Tomato leaf bacterial spot
+Tomato leaf yellow virus
+Tomato two spotted spider mites leaf
+Rice leaf blast
+Soyabean leaf
+Sugarcane leaf
+Grape leaf
+Apple leaf
+Potato leaf late blight
+Tomato mold leaf
+Wheat leaf rust
+Bell_pepper leaf spot
+Blueberry leaf
+Strawberry leaf
+Peach leaf
+Raspberry leaf
+Squash Powdery mildew leaf
+Tomato leaf
+Rice leaf
+Potato leaf
+# Pest classes
+ants
+bees
+beetle
+caterpillar
+earthworms
+earwig
+grasshopper
+moth
+slug
+snail
+wasp
+weevil

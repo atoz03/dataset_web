@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8" />
+  <title>害虫图像人工核验面板</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f5f5f5; }
+    header { background: #1f2933; color: #fff; padding: 16px 24px; }
+    header h1 { margin: 0; font-size: 20px; }
+    header p { margin: 6px 0 0; font-size: 14px; color: #d1d5db; }
+    main { padding: 16px 24px 32px; }
+    .controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 16px; }
+    .controls label { font-size: 14px; margin-right: 8px; }
+    select, button, input[type="file"] { font-size: 14px; padding: 6px 8px; }
+    button.primary { background: #2563eb; color: #fff; border: none; cursor: pointer; }
+    button.primary:hover { background: #1d4ed8; }
+    button.secondary { background: #e5e7eb; border: none; cursor: pointer; }
+    button.secondary:hover { background: #d1d5db; }
+    .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+    .card { background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.2); padding: 10px; display: flex; flex-direction: column; }
+    .card img { width: 100%; height: 160px; object-fit: cover; border-radius: 6px; margin-bottom: 8px; background: #e5e7eb; }
+    .card .meta { font-size: 13px; margin-bottom: 8px; color: #4b5563; }
+    .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; margin-right: 6px; background: #e0f2fe; color: #0369a1; }
+    .actions { display: flex; gap: 8px; }
+    .actions button { flex: 1; padding: 6px 0; border-radius: 4px; border: none; cursor: pointer; font-size: 13px; }
+    .actions button.accept { background: #16a34a; color: #fff; }
+    .actions button.reject { background: #dc2626; color: #fff; }
+    .actions button.reset { background: #cbd5f5; color: #1f2937; }
+    .status-tag { font-size: 12px; font-weight: bold; margin-bottom: 4px; }
+    .status-accepted { color: #16a34a; }
+    .status-rejected { color: #dc2626; }
+    .status-pending { color: #2563eb; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .file-input { display: inline-flex; align-items: center; gap: 6px; }
+    footer { margin-top: 32px; font-size: 12px; color: #6b7280; text-align: center; }
+  </style>
+</head>
+<body>
+  <script src="../web_scraper/pest_review_manifest.js"></script>
+  <header>
+    <h1>害虫图像人工核验面板</h1>
+    <p>逐张核验新抓取的害虫图像，标记“通过 / 剔除”，下载结果 JSON 后即可交由脚本并入主数据集。</p>
+  </header>
+  <main>
+    <section class="controls">
+      <div>
+        <label for="keyword-select">类别</label>
+        <select id="keyword-select"></select>
+      </div>
+      <div>
+        <label for="status-filter">状态</label>
+        <select id="status-filter">
+          <option value="all">全部</option>
+          <option value="pending">待审核</option>
+          <option value="accepted">已通过</option>
+          <option value="rejected">已剔除</option>
+        </select>
+      </div>
+      <div>
+        <button id="download-json" class="primary">下载审核结果 JSON</button>
+      </div>
+      <div class="file-input">
+        <label for="upload-json" class="secondary" style="padding:6px 10px; border-radius:4px; cursor:pointer;">导入已有结果</label>
+        <input type="file" id="upload-json" accept="application/json" style="display:none;" />
+      </div>
+      <div>
+        <button id="reset-all" class="secondary">重置当前类别</button>
+      </div>
+    </section>
+
+    <section class="gallery" id="gallery"></section>
+
+    <footer>
+      <p>评分数据保存在浏览器 localStorage 中。下载 JSON 后即可交由 `scripts/import_reviewed_pests.py` 脚本自动整理进数据集。</p>
+    </footer>
+  </main>
+
+  <script>
+    const BASE_PATH = '../';
+    // 兼容 manifest 以 "const pestReviewManifest = [...]" 或 "window.pestReviewManifest = [...]" 两种形式注入
+    // 非模块脚本中，const 并不会挂到 window 上，因此直接读取全局同名变量作为兜底
+    /* eslint-disable no-undef */
+    const manifest = (typeof pestReviewManifest !== 'undefined' && Array.isArray(pestReviewManifest))
+      ? pestReviewManifest
+      : (Array.isArray(window.pestReviewManifest) ? window.pestReviewManifest : []);
+    const stateKey = 'pest-review-state.v1';
+    let state = {};
+    try {
+      state = JSON.parse(localStorage.getItem(stateKey) || '{}');
+    } catch (err) {
+      console.error('Failed to load saved state', err);
+      state = {};
+    }
+
+    const keywordSelect = document.getElementById('keyword-select');
+    const statusFilter = document.getElementById('status-filter');
+    const gallery = document.getElementById('gallery');
+    const downloadButton = document.getElementById('download-json');
+    const uploadInput = document.getElementById('upload-json');
+    const resetButton = document.getElementById('reset-all');
+
+    const keywords = [...new Set(manifest.map(item => item.keyword))].sort();
+    keywords.forEach(keyword => {
+      const option = document.createElement('option');
+      option.value = keyword;
+      option.textContent = `${keyword} (${manifest.filter(item => item.keyword === keyword).length})`;
+      keywordSelect.appendChild(option);
+    });
+
+    function saveState() {
+      localStorage.setItem(stateKey, JSON.stringify(state));
+    }
+
+    function setStatus(id, status) {
+      if (!state[id]) {
+        state[id] = {};
+      }
+      state[id].status = status;
+      state[id].ts = Date.now();
+      saveState();
+      renderGallery();
+    }
+
+    function clearStatusForKeyword(keyword) {
+      manifest.filter(item => item.keyword === keyword).forEach(item => {
+        if (state[item.id]) {
+          delete state[item.id];
+        }
+      });
+      saveState();
+      renderGallery();
+    }
+
+    function getStatus(id) {
+      return state[id]?.status || 'pending';
+    }
+
+    function statusLabel(status) {
+      if (status === 'accepted') return '已通过';
+      if (status === 'rejected') return '已剔除';
+      return '待审核';
+    }
+
+    function statusClass(status) {
+      if (status === 'accepted') return 'status-accepted';
+      if (status === 'rejected') return 'status-rejected';
+      return 'status-pending';
+    }
+
+    function renderGallery() {
+      const keyword = keywordSelect.value;
+      const filter = statusFilter.value;
+      gallery.innerHTML = '';
+      const filtered = manifest.filter(item => item.keyword === keyword);
+      filtered.forEach(item => {
+        const currentStatus = getStatus(item.id);
+        if (filter !== 'all' && currentStatus !== filter) {
+          return;
+        }
+        const card = document.createElement('div');
+        card.className = 'card';
+
+        const statusEl = document.createElement('div');
+        statusEl.className = `status-tag ${statusClass(currentStatus)}`;
+        statusEl.textContent = statusLabel(currentStatus);
+        card.appendChild(statusEl);
+
+        const img = document.createElement('img');
+        img.loading = 'lazy';
+        img.src = BASE_PATH + item.path;
+        img.alt = `${item.keyword} image`;
+        card.appendChild(img);
+
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+        meta.innerHTML = `
+          <span class="pill">${item.keyword}</span>
+          <span class="pill">${item.source}</span>
+          <div style="margin-top:4px;">${item.path}</div>
+        `;
+        card.appendChild(meta);
+
+        const actions = document.createElement('div');
+        actions.className = 'actions';
+
+        const acceptBtn = document.createElement('button');
+        acceptBtn.className = 'accept';
+        acceptBtn.textContent = '通过';
+        acceptBtn.onclick = () => setStatus(item.id, 'accepted');
+
+        const rejectBtn = document.createElement('button');
+        rejectBtn.className = 'reject';
+        rejectBtn.textContent = '剔除';
+        rejectBtn.onclick = () => setStatus(item.id, 'rejected');
+
+        const resetBtn = document.createElement('button');
+        resetBtn.className = 'reset';
+        resetBtn.textContent = '重置';
+        resetBtn.onclick = () => setStatus(item.id, 'pending');
+
+        actions.appendChild(acceptBtn);
+        actions.appendChild(rejectBtn);
+        actions.appendChild(resetBtn);
+        card.appendChild(actions);
+
+        gallery.appendChild(card);
+      });
+    }
+
+    keywordSelect.addEventListener('change', renderGallery);
+    statusFilter.addEventListener('change', renderGallery);
+
+    downloadButton.addEventListener('click', () => {
+      const output = manifest.map(item => ({
+        id: item.id,
+        keyword: item.keyword,
+        source: item.source,
+        path: item.path,
+        status: getStatus(item.id),
+      }));
+      const blob = new Blob([JSON.stringify(output, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const now = new Date().toISOString().replace(/[:.]/g, '-');
+      a.download = `pest_review_${now}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+
+    uploadInput.addEventListener('change', (event) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result);
+          if (!Array.isArray(data)) {
+            alert('JSON 数据格式错误，应为数组');
+            return;
+          }
+          data.forEach(entry => {
+            if (!entry.id) return;
+            if (!state[entry.id]) {
+              state[entry.id] = {};
+            }
+            state[entry.id].status = entry.status || 'pending';
+            state[entry.id].ts = Date.now();
+          });
+          saveState();
+          renderGallery();
+        } catch (err) {
+          console.error(err);
+          alert('解析 JSON 失败');
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = '';
+    });
+
+    resetButton.addEventListener('click', () => {
+      const keyword = keywordSelect.value;
+      if (!keyword) return;
+      if (confirm(`确定重置类别 “${keyword}” 的全部审核记录？`)) {
+        clearStatusForKeyword(keyword);
+      }
+    });
+
+    if (keywords.length > 0) {
+      keywordSelect.value = keywords[0];
+    }
+    renderGallery();
+  </script>
+</body>
+</html>
