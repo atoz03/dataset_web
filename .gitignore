@@ -8,6 +8,12 @@ data*.jsonl
 # 忽略Python虚拟环境
 .venv/
 
+# 忽略本地环境变量文件
+.env
+.env.local
+.env.secret
+!.env.example
+
 # 忽略VSCode的配置
 .vscode/
 
