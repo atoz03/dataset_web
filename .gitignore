@@ -21,3 +21,11 @@ __pycache__/
 # 忽略docs目录下的md文件
 docs/*.md
 !docs/documentation.md
+
+# 忽略web打包产物与BMAD生成内容
+web-bundles/
+.bmad*
+
+# 忽略本地IDE/模式配置
+.roomodes/
+.roomodes
