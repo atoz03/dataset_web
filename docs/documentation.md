@@ -138,6 +138,26 @@ datasets/
     python3 scripts/deduplicate_images.py --roots datasets/diseases/Apple\ leaf --ham-threshold 3 --action move
     ```
 
+### 第 3.5 步：LLM 语义验证与描述增强 (可选，推荐)
+
+-   **目的**: 在大规模生成标注前，利用多模态大模型（VLM）对图像进行最后一次智能审核，确保内容与标签匹配，并生成更丰富的描述。
+-   **脚本**: `llm_tools/verify_and_describe.py`
+-   **核心功能**:
+    -   **语义验证**: 检查图像内容是否真的与其所属的类别目录名相符。
+    -   **质量过滤**: 自动隔离内容不符或质量低下的图片（如插画、截图、无关物体）。
+    -   **描述增强**: 为通过验证的图片生成更自然、详细的中英双语描述。
+-   **安全操作**:
+    -   脚本默认使用 `--action move`，会将验证失败的图片移动到相应目录下的 `.rejected_by_llm/` 文件夹中，供人工最终复审。
+    -   复审后，可修改 `scripts/build_jsonl.py` 以利用 LLM 生成的 `.json` 元数据文件，从而在最终标注中获得更高质量的文本描述。
+-   **示例命令**:
+    ```bash
+    # 确保已根据 llm_tools/README.md 完成配置
+    # 对已完成清洗的病害数据集进行 LLM 验证
+    python3 llm_tools/verify_and_describe.py \
+        --root datasets/diseases \
+        --api-key "your-vlm-api-key"
+    ```
+
 ### 第 4 步：生成数据索引 (JSONL)
 
 -   **目的**: 为清洗干净的数据集生成包含多模态标注的 `JSONL` 索引文件。
