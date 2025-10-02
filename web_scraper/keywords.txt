@@ -1,0 +1,13 @@
+# This file contains the keywords to be scraped by the bing_images spider.
+# Add one keyword per line.
+# Example keywords from your project's ontology:
+
+Apple Scab Leaf
+Apple rust leaf
+Corn Gray leaf spot
+Corn leaf blight
+Potato leaf early blight
+Rice brown spot
+Tomato leaf mosaic virus
+Wheat brown rust
+grape leaf black rot

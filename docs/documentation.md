@@ -126,11 +126,16 @@ datasets/
     -   人工检查 `.trash/` 中的文件后，再决定是手动删除，还是使用 `--action delete` 进行永久删除。
 -   **示例命令**:
     ```bash
+    # 建议在虚拟环境中安装 pillow/numpy 后执行（数据量大请分批按类/来源运行）
+    source .venv/bin/activate  # 如有
+    python3 -m pip install pillow numpy
+    # 先跑快速哈希去重（不含近重复），再按需增加 --ham-threshold 处理近重复
     python3 scripts/deduplicate_images.py \
         --roots datasets/diseases datasets/crops datasets/pests \
-        --min-width 224 --min-height 224 \
-        --blur-threshold 60 --ham-threshold 3 \
-        --action move
+        --min-width 224 --min-height 224 --blur-threshold 60 \
+        --ham-threshold 0 --action move
+    # 按来源/类分批（示例）
+    python3 scripts/deduplicate_images.py --roots datasets/diseases/Apple\ leaf --ham-threshold 3 --action move
     ```
 
 ### 第 4 步：生成数据索引 (JSONL)
@@ -390,7 +395,13 @@ python3 scripts/build_jsonl.py \
     -   **Plant Pathology 2020 下载与合并**: 使用 `kaggle competitions download -c plant-pathology-2020-fgvc7` 下载并解压；依据 `train.csv` 将图像按映射 `healthy→Apple leaf`, `rust→Apple rust leaf`, `scab→Apple Scab Leaf` 整理到临时类目录，重命名并合并至 `datasets/diseases/`，来源标签 `__kd__`。
         -   统计: 合并 1,821 张；生成 `mappings/by_class_merge_report.json`。
         -   说明: `multiple_diseases` 样本归入 `Apple leaf`，后续在 JSONL 阶段将 `labels.healthy=false` 以区分。
-    -   **Plant Pathology 2021 下载**: 使用 `kaggle competitions download -c plant-pathology-2021-fgvc8` 下载并解压至 `sources/plant-pathology-2021-fgvc8/`。该数据为多标签，暂不目录级合并，计划在 `build_jsonl.py` 中直接解析 `train.csv` 产出 JSONL。
+-   **Plant Pathology 2021 下载**: 使用 `kaggle competitions download -c plant-pathology-2021-fgvc8` 下载并解压至 `sources/plant-pathology-2021-fgvc8/`。该数据为多标签，暂不目录级合并，计划在 `build_jsonl.py` 中直接解析 `train.csv` 产出 JSONL。
+    -   **Plant Pathology 2021 下载与合并（整库收敛）**: 已将 `train_images/` 基于 `train.csv` 拷贝合并进 `datasets/diseases/`：
+        -   单标签 `rust` → `Apple rust leaf`，`scab` → `Apple Scab Leaf`；
+        -   `healthy` → `Apple leaf`；
+        -   其他多标签 → `Apple leaf`（不健康）。
+        -   生成 `mappings/pp2021_dataset_labels.json`，保存每个拷贝后的数据集路径与 `multi_labels` 的对应关系，`build_jsonl.py` 会据此在 `labels.pp2021` 中补充原始多标签信息。
+        -   `sources/plant-pathology-2021-fgvc8/` 下的 `train_images/`、`test_images/` 已清理，仅保留 CSV。
 
 ---
 
