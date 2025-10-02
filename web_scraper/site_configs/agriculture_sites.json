@@ -1,0 +1,31 @@
+[
+  {
+    "name": "gbif_occurrences",
+    "type": "gbif",
+    "base_url": "https://api.gbif.org/v1/occurrence/search",
+    "species_match_url": "https://api.gbif.org/v1/species/match",
+    "query": {
+      "param": "taxon_key",
+      "params": {
+        "mediaType": "StillImage",
+        "limit": 200,
+        "offset": 0
+      },
+      "per_page": 200,
+      "max_pages": 5
+    },
+    "keyword_overrides": {
+      "Apple Scab Leaf": "Venturia inaequalis",
+      "Apple rust leaf": "Gymnosporangium juniperi-virginianae",
+      "Corn Gray leaf spot": "Cercospora zeae-maydis",
+      "Corn leaf blight": "Exserohilum turcicum",
+      "Potato leaf early blight": "Alternaria solani",
+      "Rice brown spot": "Bipolaris oryzae",
+      "Tomato leaf mosaic virus": "Tomato mosaic virus",
+      "Wheat brown rust": "Puccinia triticina",
+      "grape leaf black rot": "Guignardia bidwellii"
+    },
+    "max_results_per_keyword": 600,
+    "media_domains": ["inaturalist-open-data.s3.amazonaws.com", "static.inaturalist.org"]
+  }
+]

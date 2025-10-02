@@ -29,3 +29,7 @@ web-bundles/
 # 忽略本地IDE/模式配置
 .roomodes/
 .roomodes
+
+# 忽略爬虫输出
+web_scraper/scraped_images/
+web_scraper/agri_sites_run.log

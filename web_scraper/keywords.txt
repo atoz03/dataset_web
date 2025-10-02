@@ -1,5 +1,5 @@
-# This file contains the keywords to be scraped by the bing_images spider.
-# Add one keyword per line.
+# This file contains the keywords to be scraped by the spiders.
+# Add one keyword per line. For API-driven sources (e.g. iNaturalist), prefer standard English names or Latin binomials.
 # Example keywords from your project's ontology:
 
 Apple Scab Leaf
@@ -9,5 +9,7 @@ Corn leaf blight
 Potato leaf early blight
 Rice brown spot
 Tomato leaf mosaic virus
+Zea mays
+Phytophthora infestans
 Wheat brown rust
 grape leaf black rot
