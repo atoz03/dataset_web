@@ -197,7 +197,7 @@ def process_directory(
         expected_class = class_dir.name
         logging.info(f"--- Processing class: {expected_class} ---")
 
-        for image_path in class_dir.iterdir():
+        for image_path in class_dir.rglob('*'):
             if image_path.is_file() and image_path.suffix.lower() in image_extensions:
                 try:
                     result = client.analyze_image(image_path, expected_class)
