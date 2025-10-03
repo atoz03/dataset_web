@@ -58,10 +58,17 @@ class XmdbdVLMClient:
         return (
             "You are an agronomy vision expert. You are validating high-resolution images of plant leaves. "
             f"The image is expected to belong to the class '{expected_class}'. "
-            "Analyse the image to check whether the content semantically matches the expected class, assess the image quality (sharpness, lighting, presence of watermarks/screenshots), and craft rich bilingual descriptions. "
+            "1. Analyze the image to check whether the content semantically matches the expected class. "
+            "2. If it does not match, identify the actual class of the main subject in the image (e.g., 'snail', 'seashell', 'marine slug'). Use a concise, one or two-word English label. "
+            "3. Assess the image quality (sharpness, lighting, presence of watermarks/screenshots). "
+            "4. Craft rich bilingual descriptions. "
             "Return a JSON object with the following keys: "
-            "is_match (boolean), quality_score (float 0-1), rejection_reason (null or string), "
-            "description_en (string) and description_zh (string)."
+            "is_match (boolean), "
+            "actual_class (string, null if is_match is true, or if the actual class cannot be determined), "
+            "quality_score (float 0-1), "
+            "rejection_reason (null or string), "
+            "description_en (string), "
+            "description_zh (string)."
         )
 
     def _post(self, endpoint: str, payload: Dict[str, Any]) -> Dict[str, Any]:
@@ -149,6 +156,7 @@ class XmdbdVLMClient:
     def _validate_payload(payload: Dict[str, Any]) -> None:
         required_keys = {
             "is_match": bool,
+            "actual_class": (str, type(None)),
             "quality_score": (int, float),
             "rejection_reason": (str, type(None)),
             "description_en": str,
@@ -203,15 +211,30 @@ def process_directory(
                     result = client.analyze_image(image_path, expected_class)
 
                     if not result.get("is_match"):
-                        logging.warning(f"REJECTED: {image_path}. Reason: {result.get('rejection_reason')}")
+                        reason = result.get('rejection_reason')
+                        logging.warning(f"REJECTED: {image_path}. Reason: {reason}")
                         if action == "move":
-                            target_dir = rejected_dir / expected_class
-                            target_dir.mkdir(exist_ok=True)
+                            actual_class = result.get("actual_class")
+                            if actual_class and isinstance(actual_class, str) and actual_class.strip():
+                                # Sanitize the class name to be a valid directory name
+                                sanitized_class = "".join(c for c in actual_class.strip().lower() if c.isalnum() or c in (' ', '_')).rstrip().replace(' ', '_')
+                                target_dir = rejected_dir / sanitized_class
+                            else:
+                                # Fallback to old behavior
+                                target_dir = rejected_dir / expected_class
+                            
+                            target_dir.mkdir(parents=True, exist_ok=True)
                             image_path.rename(target_dir / image_path.name)
                         elif action == "delete":
                             image_path.unlink()
                         elif action == "dry-run":
-                            logging.info("[dry-run] Would move to %s", rejected_dir / expected_class / image_path.name)
+                            actual_class = result.get("actual_class")
+                            if actual_class and isinstance(actual_class, str) and actual_class.strip():
+                                sanitized_class = "".join(c for c in actual_class.strip().lower() if c.isalnum() or c in (' ', '_')).rstrip().replace(' ', '_')
+                                target_path = rejected_dir / sanitized_class / image_path.name
+                            else:
+                                target_path = rejected_dir / expected_class / image_path.name
+                            logging.info("[dry-run] Would move to %s", target_path)
                     else:
                         logging.info(f"ACCEPTED: {image_path}")
                         if output_metadata and action != "dry-run":

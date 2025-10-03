@@ -26,12 +26,28 @@
     .actions button.accept { background: #16a34a; color: #fff; }
     .actions button.reject { background: #dc2626; color: #fff; }
     .actions button.reset { background: #cbd5f5; color: #1f2937; }
+    .actions button.llm { background: #0ea5e9; color: #fff; }
+    .actions button.llm[disabled] { opacity: 0.6; cursor: wait; }
     .status-tag { font-size: 12px; font-weight: bold; margin-bottom: 4px; }
     .status-accepted { color: #16a34a; }
     .status-rejected { color: #dc2626; }
     .status-pending { color: #2563eb; }
     .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
     .file-input { display: inline-flex; align-items: center; gap: 6px; }
+    .analysis { margin-top: 10px; padding: 10px; border-radius: 6px; background: #f1f5f9; font-size: 13px; color: #1f2937; display: flex; flex-direction: column; gap: 8px; }
+    .analysis.match { border: 1px solid #34d399; }
+    .analysis.mismatch { border: 1px solid #f97316; }
+    .analysis.error { border: 1px solid #dc2626; background: #fee2e2; color: #991b1b; }
+    .analysis .title { font-weight: bold; font-size: 14px; }
+    .analysis .description { line-height: 1.4; }
+    .analysis .quality { font-size: 12px; color: #4b5563; }
+    .analysis .controls { display: flex; flex-direction: column; gap: 6px; }
+    .analysis .controls label { font-size: 12px; color: #374151; }
+    .analysis .controls input,
+    .analysis .controls select { padding: 4px 6px; font-size: 13px; border-radius: 4px; border: 1px solid #cbd5f5; }
+    .analysis .controls button { align-self: flex-start; padding: 6px 10px; font-size: 13px; border-radius: 4px; border: none; cursor: pointer; background: #2563eb; color: #fff; }
+    .analysis .controls button[disabled] { opacity: 0.6; cursor: wait; }
+    .analysis .mock-note { font-size: 12px; color: #6b7280; }
     footer { margin-top: 32px; font-size: 12px; color: #6b7280; text-align: center; }
   </style>
 </head>
@@ -77,20 +93,10 @@
 
   <script>
     const BASE_PATH = '../';
-    // 兼容 manifest 以 "const pestReviewManifest = [...]" 或 "window.pestReviewManifest = [...]" 两种形式注入
-    // 非模块脚本中，const 并不会挂到 window 上，因此直接读取全局同名变量作为兜底
     /* eslint-disable no-undef */
     const manifest = (typeof pestReviewManifest !== 'undefined' && Array.isArray(pestReviewManifest))
       ? pestReviewManifest
       : (Array.isArray(window.pestReviewManifest) ? window.pestReviewManifest : []);
-    const stateKey = 'pest-review-state.v1';
-    let state = {};
-    try {
-      state = JSON.parse(localStorage.getItem(stateKey) || '{}');
-    } catch (err) {
-      console.error('Failed to load saved state', err);
-      state = {};
-    }
 
     const keywordSelect = document.getElementById('keyword-select');
     const statusFilter = document.getElementById('status-filter');
@@ -99,36 +105,70 @@
     const uploadInput = document.getElementById('upload-json');
     const resetButton = document.getElementById('reset-all');
 
-    const keywords = [...new Set(manifest.map(item => item.keyword))].sort();
-    keywords.forEach(keyword => {
-      const option = document.createElement('option');
-      option.value = keyword;
-      option.textContent = `${keyword} (${manifest.filter(item => item.keyword === keyword).length})`;
-      keywordSelect.appendChild(option);
-    });
+    const stateKey = 'pest-review-state.v1';
+    const analysisCache = {};
+    const pendingAnalysis = new Set();
+    const pendingReclassify = new Set();
+    let state = {};
+
+    try {
+      state = JSON.parse(localStorage.getItem(stateKey) || '{}');
+    } catch (err) {
+      console.error('Failed to load saved state', err);
+      state = {};
+    }
+
+    function resolveApiBase() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('api')) {
+        return params.get('api');
+      }
+      if (window.pestReviewConfig?.apiBase) {
+        return window.pestReviewConfig.apiBase;
+      }
+      return 'http://localhost:5178/api';
+    }
+
+    const API_BASE = resolveApiBase();
+
+    function computeKeywordStats() {
+      const counts = new Map();
+      manifest.forEach(item => {
+        const key = item.keyword;
+        counts.set(key, (counts.get(key) || 0) + 1);
+      });
+      return Array.from(counts.entries())
+        .map(([keyword, count]) => ({ keyword, count }))
+        .sort((a, b) => a.keyword.localeCompare(b.keyword));
+    }
+
+    function populateKeywordOptions(preserveSelection = true) {
+      const current = preserveSelection ? keywordSelect.value : '';
+      const stats = computeKeywordStats();
+      keywordSelect.innerHTML = '';
+      if (stats.length === 0) {
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = '无待审条目';
+        keywordSelect.appendChild(placeholder);
+        keywordSelect.value = '';
+        return;
+      }
+      stats.forEach(({ keyword, count }) => {
+        const option = document.createElement('option');
+        option.value = keyword;
+        option.textContent = `${keyword} (${count})`;
+        keywordSelect.appendChild(option);
+      });
+      if (current && stats.some(item => item.keyword === current)) {
+        keywordSelect.value = current;
+      } else {
+        keywordSelect.value = stats[0].keyword;
+      }
+    }
 
     function saveState() {
       localStorage.setItem(stateKey, JSON.stringify(state));
-    }
-
-    function setStatus(id, status) {
-      if (!state[id]) {
-        state[id] = {};
-      }
-      state[id].status = status;
-      state[id].ts = Date.now();
-      saveState();
-      renderGallery();
-    }
-
-    function clearStatusForKeyword(keyword) {
-      manifest.filter(item => item.keyword === keyword).forEach(item => {
-        if (state[item.id]) {
-          delete state[item.id];
-        }
-      });
-      saveState();
-      renderGallery();
     }
 
     function getStatus(id) {
@@ -147,10 +187,236 @@
       return 'status-pending';
     }
 
+    function setStatus(id, status) {
+      if (!state[id]) {
+        state[id] = {};
+      }
+      state[id].status = status;
+      state[id].ts = Date.now();
+      saveState();
+      renderGallery();
+    }
+
+    function clearStatusForKeyword(keyword) {
+      manifest.filter(item => item.keyword === keyword).forEach(item => {
+        if (state[item.id]) {
+          delete state[item.id];
+        }
+        if (analysisCache[item.id]) {
+          delete analysisCache[item.id];
+        }
+      });
+      saveState();
+      renderGallery();
+    }
+
+    function resetStateForItem(id) {
+      if (state[id]) {
+        delete state[id];
+        saveState();
+      }
+    }
+
+    function updateManifestItem(id, updates) {
+      const target = manifest.find(entry => entry.id === id);
+      if (target) {
+        Object.assign(target, updates);
+      }
+    }
+
+    function renderAnalysisBlock(card, item) {
+      card.querySelectorAll('.analysis').forEach(el => el.remove());
+      const record = analysisCache[item.id];
+      if (!record) {
+        return;
+      }
+
+      const analysisEl = document.createElement('div');
+      analysisEl.className = 'analysis';
+
+      if (record.status === 'error') {
+        analysisEl.classList.add('error');
+        analysisEl.innerHTML = `<div class="title">LLM 分析失败</div><div>${record.message}</div>`;
+        card.appendChild(analysisEl);
+        return;
+      }
+
+      const data = record.data;
+      const isMatch = Boolean(data?.is_match);
+      analysisEl.classList.add(isMatch ? 'match' : 'mismatch');
+
+      const title = document.createElement('div');
+      title.className = 'title';
+      title.textContent = isMatch ? 'LLM 判定：与当前类目匹配' : 'LLM 判定：疑似不匹配';
+      analysisEl.appendChild(title);
+
+      const desc = document.createElement('div');
+      desc.className = 'description';
+      const zh = data?.description_zh || '';
+      const en = data?.description_en || '';
+      desc.innerHTML = [zh, en].filter(Boolean).map(text => `<div>${text}</div>`).join('');
+      analysisEl.appendChild(desc);
+
+      if (typeof data?.quality_score === 'number') {
+        const q = document.createElement('div');
+        q.className = 'quality';
+        const quality = (data.quality_score * 100).toFixed(0);
+        const reason = data.rejection_reason ? ` · ${data.rejection_reason}` : '';
+        q.textContent = `质量评分：${quality} / 100${reason}`;
+        analysisEl.appendChild(q);
+      }
+
+      if (data?.mock) {
+        const mockNote = document.createElement('div');
+        mockNote.className = 'mock-note';
+        mockNote.textContent = '（当前为离线 Mock 响应，需在服务器端配置真实 VLM 密钥以启用正式分析）';
+        analysisEl.appendChild(mockNote);
+      }
+
+      const controls = document.createElement('div');
+      controls.className = 'controls';
+
+      const targetLabel = document.createElement('label');
+      targetLabel.textContent = '目标类目（可修改）';
+      controls.appendChild(targetLabel);
+
+      const targetInput = document.createElement('input');
+      targetInput.value = data?.actual_class || item.keyword;
+      controls.appendChild(targetInput);
+
+      const renameLabel = document.createElement('label');
+      renameLabel.textContent = '重命名策略';
+      controls.appendChild(renameLabel);
+
+      const renameSelect = document.createElement('select');
+      renameSelect.innerHTML = `
+        <option value="keep">保留原文件名</option>
+        <option value="uuid">生成规范名称（含 UUID）</option>
+        <option value="custom">自定义文件名</option>
+      `;
+      controls.appendChild(renameSelect);
+
+      const customInput = document.createElement('input');
+      customInput.placeholder = '例如: caterpillar__web__xxxx.jpg';
+      customInput.style.display = 'none';
+      controls.appendChild(customInput);
+
+      renameSelect.addEventListener('change', () => {
+        customInput.style.display = renameSelect.value === 'custom' ? 'block' : 'none';
+      });
+
+      const applyBtn = document.createElement('button');
+      applyBtn.textContent = '执行移动/重命名';
+      if (pendingReclassify.has(item.id)) {
+        applyBtn.disabled = true;
+      }
+
+      applyBtn.addEventListener('click', () => {
+        const targetClass = targetInput.value.trim();
+        if (!targetClass) {
+          alert('目标类目不能为空');
+          return;
+        }
+        const renameMode = renameSelect.value;
+        const customName = renameMode === 'custom' ? customInput.value.trim() : undefined;
+        reclassifyItem(item, targetClass, renameMode, customName);
+      });
+
+      controls.appendChild(applyBtn);
+      analysisEl.appendChild(controls);
+
+      if (record.applied) {
+        const appliedNote = document.createElement('div');
+        appliedNote.className = 'quality';
+        appliedNote.textContent = '已应用最新移动操作。';
+        analysisEl.appendChild(appliedNote);
+      }
+      card.appendChild(analysisEl);
+    }
+
+    async function analyzeItem(item) {
+      if (!API_BASE) {
+        alert('未检测到后端服务，请先启动 pest_review_server.py');
+        return;
+      }
+      pendingAnalysis.add(item.id);
+      renderGallery();
+      try {
+        const response = await fetch(`${API_BASE}/analyze`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: item.path, keyword: item.keyword }),
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+          const message = payload?.message || payload?.error || `HTTP ${response.status}`;
+          throw new Error(message);
+        }
+        analysisCache[item.id] = { status: 'ok', data: payload.data };
+      } catch (error) {
+        const message = error?.message || '未知错误';
+        analysisCache[item.id] = { status: 'error', message };
+      } finally {
+        pendingAnalysis.delete(item.id);
+        renderGallery();
+      }
+    }
+
+    async function reclassifyItem(item, targetClass, renameMode, customName) {
+      pendingReclassify.add(item.id);
+      renderGallery();
+      try {
+        const response = await fetch(`${API_BASE}/reclassify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: item.id,
+            path: item.path,
+            target_class: targetClass,
+            rename_mode: renameMode,
+            custom_name: customName,
+          }),
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+          const message = payload?.message || payload?.error || `HTTP ${response.status}`;
+          throw new Error(message);
+        }
+        const outcome = payload.data;
+        updateManifestItem(item.id, {
+          keyword: outcome.target_class,
+          path: outcome.new_path,
+        });
+        resetStateForItem(item.id);
+        if (analysisCache[item.id]) {
+          analysisCache[item.id].applied = true;
+        }
+        populateKeywordOptions();
+        renderGallery();
+        alert(`已移动：${item.id} → ${outcome.new_path}`);
+      } catch (error) {
+        const message = error?.message || '操作失败';
+        alert(`移动失败：${message}`);
+      } finally {
+        pendingReclassify.delete(item.id);
+        renderGallery();
+      }
+    }
+
     function renderGallery() {
       const keyword = keywordSelect.value;
       const filter = statusFilter.value;
       gallery.innerHTML = '';
+
+      if (!keyword) {
+        const empty = document.createElement('div');
+        empty.textContent = '暂无待审核图片';
+        empty.style.padding = '12px';
+        empty.style.color = '#6b7280';
+        gallery.appendChild(empty);
+        return;
+      }
+
       const filtered = manifest.filter(item => item.keyword === keyword);
       filtered.forEach(item => {
         const currentStatus = getStatus(item.id);
@@ -198,11 +464,20 @@
         resetBtn.textContent = '重置';
         resetBtn.onclick = () => setStatus(item.id, 'pending');
 
+        const llmBtn = document.createElement('button');
+        llmBtn.className = 'llm';
+        const isAnalyzing = pendingAnalysis.has(item.id);
+        llmBtn.textContent = isAnalyzing ? '分析中…' : 'LLM 分析';
+        llmBtn.disabled = isAnalyzing;
+        llmBtn.onclick = () => analyzeItem(item);
+
         actions.appendChild(acceptBtn);
         actions.appendChild(rejectBtn);
         actions.appendChild(resetBtn);
+        actions.appendChild(llmBtn);
         card.appendChild(actions);
 
+        renderAnalysisBlock(card, item);
         gallery.appendChild(card);
       });
     }
@@ -268,9 +543,7 @@
       }
     });
 
-    if (keywords.length > 0) {
-      keywordSelect.value = keywords[0];
-    }
+    populateKeywordOptions(false);
     renderGallery();
   </script>
 </body>
