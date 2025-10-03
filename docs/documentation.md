@@ -209,34 +209,11 @@ datasets/
 
 - 如果打开后没有任何图片:
   - 核对 `web_scraper/pest_review_manifest.js` 是否存在且包含条目（文件首行应为 `const pestReviewManifest = [...]`）。
-  - 若你在这次抓取后尚未生成清单，可在仓库根目录执行下方脚本重新生成：
+  - 若你在这次抓取后尚未生成或已执行去重导致路径变化（页面 404），请在仓库根目录执行脚本刷新清单（自动跳过 `.trash/` 且仅收录真实存在的文件）：
     ```bash
-    python3 - <<'PY'
-    import hashlib, json
-    from pathlib import Path
-    pests = ["ants","bees","beetle","caterpillar","earthworms","earwig",
-             "grasshopper","moth","slug","snail","wasp","weevil"]
-    root = Path('.').resolve()
-    items = []
-    for k in pests:
-        d = root/"web_scraper"/"scraped_images"/k
-        if not d.exists():
-            continue
-        for img in d.rglob('*'):
-            if img.suffix.lower() in {'.jpg','.jpeg','.png'}:
-                rel = img.relative_to(root).as_posix()
-                items.append({
-                    'id': hashlib.sha1(rel.encode()).hexdigest(),
-                    'keyword': k,
-                    'source': img.parent.name,
-                    'path': rel,
-                })
-    items.sort(key=lambda x: (x['keyword'], x['path']))
-    (root/"web_scraper"/"pest_review_manifest.js").write_text(
-        "const pestReviewManifest = " + json.dumps(items, indent=2) + ";\n"
-    )
-    print("entries:", len(items))
-    PY
+    python3 scripts/generate_pest_review_manifest.py \
+      --root web_scraper/scraped_images \
+      --out web_scraper/pest_review_manifest.js
     ```
   - 确认以“仓库根目录”为站点根访问页面（例如通过 `http://localhost:8000/docs/...`），否则相对路径 `../web_scraper/...` 可能无法被服务器解析。
   - 更换到系统浏览器（Safari/Chrome/Edge 等），避免 IDE 预览禁止执行本地脚本导致清单未加载。
