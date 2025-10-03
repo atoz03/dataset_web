@@ -165,35 +165,12 @@ python scripts/deduplicate_images.py \
 
 ### 1) 生成/刷新清单
 
-抓取完成后，生成 `web_scraper/pest_review_manifest.js`（页面的数据源）。若需刷新，可在仓库根目录执行：
+抓取完成后，生成 `web_scraper/pest_review_manifest.js`（页面的数据源）。若去重/移动后出现 404 或需刷新，请在仓库根目录执行：
 
 ```bash
-python3 - <<'PY'
-import hashlib, json
-from pathlib import Path
-pests = ["ants","bees","beetle","caterpillar","earthworms","earwig",
-         "grasshopper","moth","slug","snail","wasp","weevil"]
-root = Path('.').resolve()
-items = []
-for k in pests:
-    d = root/"web_scraper"/"scraped_images"/k
-    if not d.exists():
-        continue
-    for img in d.rglob('*'):
-        if img.suffix.lower() in {'.jpg','.jpeg','.png'}:
-            rel = img.relative_to(root).as_posix()
-            items.append({
-                'id': hashlib.sha1(rel.encode()).hexdigest(),
-                'keyword': k,
-                'source': img.parent.name,
-                'path': rel,
-            })
-items.sort(key=lambda x: (x['keyword'], x['path']))
-(root/"web_scraper"/"pest_review_manifest.js").write_text(
-    "const pestReviewManifest = " + json.dumps(items, indent=2) + ";\n"
-)
-print("entries:", len(items))
-PY
+python3 scripts/generate_pest_review_manifest.py \
+  --root web_scraper/scraped_images \
+  --out web_scraper/pest_review_manifest.js
 ```
 
 ### 2) 打开审核页面
