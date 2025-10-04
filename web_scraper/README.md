@@ -108,14 +108,22 @@ scraped_images/
 ```bash
 # 在仓库根目录执行（使用同一套脚本）
 source .venv/bin/activate  # 如已创建
+
+# 近重复按“类级别”范围，跨来源去重（bing.com 与 gbif_occurrences 等）
 python scripts/deduplicate_images.py \
   --roots web_scraper/scraped_images \
   --min-width 224 --min-height 224 \
-  --blur-threshold 60 --ham-threshold 3 \
-  --near-scope class --action move
+  --blur-method both --blur-threshold 60 --tenengrad-threshold 700 \
+  --ham-threshold 3 --near-scope class --action move
+
+# 从回收站“挽救”被误判的模糊图（基于当前阈值），仅执行回收不清洗：
+python scripts/deduplicate_images.py \
+  --roots web_scraper/scraped_images \
+  --blur-method both --blur-threshold 60 --tenengrad-threshold 700 \
+  --rescue-blur --skip-clean
 ```
 
-上述命令会将待删除的文件安全移动到 `web_scraper/scraped_images/.trash/`，可复核后再做最终处理。
+上述命令会将待删除的文件安全移动到 `web_scraper/scraped_images/.trash/`，并支持在阈值调整后自动“回捞”被误判的模糊图，便于复核。
 
 ### 第 4.1 步：扩展站点配置（可选）
 
@@ -173,6 +181,8 @@ python3 scripts/generate_pest_review_manifest.py \
   --out web_scraper/pest_review_manifest.js
 ```
 
+说明：清单会包含 `.trash/` 下的条目，并在每条记录上标注 `in_trash` 与 `trash_reason` 字段；页面会将其归入“回收站”分组，和正常类目分开展示，便于复核。
+
 ### 2) 打开审核页面
 
 启动本地静态服务，确保相对路径生效：
@@ -186,6 +196,7 @@ http://localhost:8000/docs/pest_manual_review.html
 页面功能：
 
 - 按类别筛选，逐张标记“通过/剔除/重置”；
+- 支持“回收站”分组展示（含原因标签），可针对近期清洗移入 `.trash/` 的图片进行复核与再判断；
 - 支持导入/导出 JSON，决策同时保存在 `localStorage`；
 - 无法看到图片时，请确认：
   - `web_scraper/pest_review_manifest.js` 是否存在且包含条目；

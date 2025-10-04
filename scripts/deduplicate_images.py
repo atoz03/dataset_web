@@ -413,6 +413,7 @@ def main(argv: List[str]) -> int:
                     help="Scope for near-duplicate grouping: dir (default), class (first directory under root), or root (global)")
     ap.add_argument("--action", choices=["move", "delete"], default="move")
     ap.add_argument("--rescue-blur", action="store_true", help="Scan .trash to restore images no longer considered blur under current settings")
+    ap.add_argument("--skip-clean", action="store_true", help="Only run rescue (skip the main cleanup pass)")
     args = ap.parse_args(argv)
 
     roots = [Path(r) for r in args.roots]
@@ -421,15 +422,16 @@ def main(argv: List[str]) -> int:
         if not root.exists():
             print(f"[WARN] Skip missing root: {root}")
             continue
-        print(f"== Cleaning {root} ==")
-        st = cleanup_root(root, args.min_width, args.min_height, args.blur_threshold, args.action, args.ham_threshold, args.near_scope,
-                          blur_method=args.blur_method, tenengrad_thr=args.tenengrad_threshold)
-        print(f"  Total: {st.total} | Small: {st.removed_small} | Blur: {st.removed_blur} | Dupe: {st.removed_dupe} | Errors: {st.errors}")
-        overall.total += st.total
-        overall.removed_small += st.removed_small
-        overall.removed_blur += st.removed_blur
-        overall.removed_dupe += st.removed_dupe
-        overall.errors += st.errors
+        if not args.skip_clean:
+            print(f"== Cleaning {root} ==")
+            st = cleanup_root(root, args.min_width, args.min_height, args.blur_threshold, args.action, args.ham_threshold, args.near_scope,
+                              blur_method=args.blur_method, tenengrad_thr=args.tenengrad_threshold)
+            print(f"  Total: {st.total} | Small: {st.removed_small} | Blur: {st.removed_blur} | Dupe: {st.removed_dupe} | Errors: {st.errors}")
+            overall.total += st.total
+            overall.removed_small += st.removed_small
+            overall.removed_blur += st.removed_blur
+            overall.removed_dupe += st.removed_dupe
+            overall.errors += st.errors
         if args.rescue_blur:
             scanned, rescued = rescue_blur(root, blur_method=args.blur_method, lap_thr=args.blur_threshold, ten_thr=args.tenengrad_threshold)
             print(f"  Rescue from .trash: scanned {scanned}, restored {rescued}")

@@ -162,8 +162,9 @@ datasets/
 -   **脚本**: `scripts/deduplicate_images.py`
 -   **核心功能**:
     -   **尺寸过滤**: 剔除小于指定 `min-width` 和 `min-height` 的图像。
-    -   **模糊检测**: 使用 Laplacian 方差检测并剔除模糊图像。
+    -   **模糊检测**: 支持三种方式：`laplacian`（拉普拉斯方差）、`tenengrad`（Sobel）、`both`（二者同时低于阈值才判模糊，推荐）。
     -   **重复检测**: 使用感知哈希 (pHash/aHash) 检测并剔除重复或高度相似的图像。
+    -   **回收站复核**: 通过 `--rescue-blur` 按当前阈值重判 `.trash/` 内的 `blur_*`，不再模糊的自动还原回原类目。
 -   **安全操作**:
     -   强烈建议首次运行时使用 `--action move`，脚本会将待删除文件移动到相应目录下的 `.trash/` 文件夹中。
     -   人工检查 `.trash/` 中的文件后，再决定是手动删除，还是使用 `--action delete` 进行永久删除。
@@ -182,11 +183,24 @@ datasets/
 
 -   针对爬虫抓取目录（如 `web_scraper/scraped_images`），建议在近重复检测时使用“按类分组”范围以跨来源去重（例如 `bing.com` 与 `gbif_occurrences` 之间）：
     ```bash
+    # 更鲁棒的模糊检测（Tenengrad 或 双阈值）
+    # 仅 Tenengrad：
     python3 scripts/deduplicate_images.py \
         --roots web_scraper/scraped_images \
-        --min-width 224 --min-height 224 \
-        --blur-threshold 60 --ham-threshold 3 \
-        --near-scope class --action move
+        --blur-method tenengrad --tenengrad-threshold 700 \
+        --ham-threshold 3 --near-scope class --action move
+
+    # 双阈值（更保守，需同时低于两者才判模糊，减少误杀）
+    python3 scripts/deduplicate_images.py \
+        --roots web_scraper/scraped_images \
+        --blur-method both --blur-threshold 60 --tenengrad-threshold 700 \
+        --ham-threshold 3 --near-scope class --action move
+
+    # 从回收站“挽救”被误杀的模糊图（基于当前阈值）：
+    python3 scripts/deduplicate_images.py \
+        --roots web_scraper/scraped_images \
+        --blur-method both --blur-threshold 60 --tenengrad-threshold 700 \
+        --rescue-blur --skip-clean
     ```
     ```
 
@@ -611,6 +625,8 @@ python3 scripts/build_jsonl.py \
         -   统计: 总计扫描 8,986 张，移动 `small` 3 张、`blur` 3,022 张、`dupe` 2 张至 `web_scraper/scraped_images/.trash/`，错误 0。
         -   后续: `.trash/` 保留原目录结构，待人工复查无误后再执行永久删除；随后执行 `.venv/bin/python scripts/generate_pest_review_manifest.py --root web_scraper/scraped_images --out web_scraper/pest_review_manifest.js`，更新清单至 8,986 条，并为回收站条目标注 `in_trash`/`trash_reason`。
         -   额外: 将已审核完毕的 `web_scraper/scraped_images/ants/` 整体迁移至 `web_scraper/scraped_images/.trash/manual_20251004_ants/`，确保类别下拉不再混入历史条目。
+    -   **回收站挽救（Tenengrad/both 优化）**: 使用 `.venv/bin/python scripts/deduplicate_images.py --roots web_scraper/scraped_images --blur-method both --blur-threshold 60 --tenengrad-threshold 700 --rescue-blur --skip-clean` 对 `.trash/` 中 `blur_*` 进行复核与还原。
+        -   统计: 扫描 1,519 条，成功还原 639 条；随后刷新清单至 8,600 条。
 
 ---
 
