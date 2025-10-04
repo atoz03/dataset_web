@@ -18,18 +18,17 @@ practically impossible, but the check is kept for safety when resuming).
 
 from __future__ import annotations
 
-import hashlib
 import os
 import sys
 import uuid
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Iterable, List, Tuple
+from typing import Dict, Iterable, Tuple
 
 
-ROOT = Path(__file__).resolve().parent
-SRC_ROOT = ROOT / "Crop Diseases"
-DST_ROOT = ROOT / "datasets" / "diseases"
+SCRIPT_DIR = Path(__file__).resolve().parent
+REPO_ROOT = SCRIPT_DIR.parent
+SRC_ROOT = REPO_ROOT / "Crop Diseases"
+DST_ROOT = REPO_ROOT / "datasets" / "diseases"
 
 # Explicit mapping from source folder name to target class folder name
 CLASS_MAP: Dict[str, str] = {
@@ -79,14 +78,20 @@ def rename_for(target_class: str, src_path: Path) -> str:
     """Generate a deterministic-ish new filename for a copied image.
 
     We embed the target class for readability, tag with `__cd__` to indicate
-    the source dataset (Crop Diseases), and append a uuid4 for uniqueness.
+    the source dataset (Crop Diseases), and append a UUID derived from the
+    original relative path to remain stable across reruns.
     """
     ext = src_path.suffix.lower()
     if ext not in IMAGE_EXTS:
         ext = ".jpg"  # default fallback if odd extension
     # Normalize spaces in target_class for filename readability
     cls_token = target_class.replace("/", "-").strip()
-    return f"{cls_token}__cd__{uuid.uuid4().hex}{ext}"
+    try:
+        rel_src = src_path.relative_to(SRC_ROOT)
+    except ValueError:
+        rel_src = src_path
+    stable_uuid = uuid.uuid5(uuid.NAMESPACE_URL, f"crop-diseases::{cls_token}::{rel_src.as_posix()}")
+    return f"{cls_token}__cd__{stable_uuid.hex}{ext}"
 
 
 def copy_file(src: Path, dst_dir: Path, new_name: str) -> Tuple[bool, Path]:
