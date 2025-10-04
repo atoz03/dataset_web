@@ -240,7 +240,7 @@ datasets/
 
 - 如果打开后没有任何图片:
   - 核对 `web_scraper/pest_review_manifest.js` 是否存在且包含条目（文件首行应为 `const pestReviewManifest = [...]`）。
-  - 若你在这次抓取后尚未生成或已执行去重导致路径变化（页面 404），请在仓库根目录执行脚本刷新清单（自动跳过 `.trash/` 且仅收录真实存在的文件）：
+  - 若你在这次抓取后尚未生成或已执行去重导致路径变化（页面 404），请在仓库根目录执行脚本刷新清单（会附带 `.trash/` 内的文件并打上 `in_trash` 标记，方便回收站复核）：
     ```bash
     python3 scripts/generate_pest_review_manifest.py \
       --root web_scraper/scraped_images \
@@ -606,6 +606,11 @@ python3 scripts/build_jsonl.py \
         -   其他多标签 → `Apple leaf`（不健康）。
         -   生成 `mappings/pp2021_dataset_labels.json`，保存每个拷贝后的数据集路径与 `multi_labels` 的对应关系，`build_jsonl.py` 会据此在 `labels.pp2021` 中补充原始多标签信息。
         -   `sources/plant-pathology-2021-fgvc8/` 下的 `train_images/`、`test_images/` 已清理，仅保留 CSV。
+-   **2025-10-04**:
+    -   **抓取图片清洗**: 按 3.3 节流程对 `web_scraper/scraped_images/` 运行 `.venv/bin/python scripts/deduplicate_images.py --roots web_scraper/scraped_images --min-width 224 --min-height 224 --blur-threshold 60 --ham-threshold 3 --near-scope class --action move`，同步处理尺寸过滤、模糊检测与近重复。
+        -   统计: 总计扫描 8,986 张，移动 `small` 3 张、`blur` 3,022 张、`dupe` 2 张至 `web_scraper/scraped_images/.trash/`，错误 0。
+        -   后续: `.trash/` 保留原目录结构，待人工复查无误后再执行永久删除；随后执行 `.venv/bin/python scripts/generate_pest_review_manifest.py --root web_scraper/scraped_images --out web_scraper/pest_review_manifest.js`，更新清单至 8,986 条，并为回收站条目标注 `in_trash`/`trash_reason`。
+        -   额外: 将已审核完毕的 `web_scraper/scraped_images/ants/` 整体迁移至 `web_scraper/scraped_images/.trash/manual_20251004_ants/`，确保类别下拉不再混入历史条目。
 
 ---
 

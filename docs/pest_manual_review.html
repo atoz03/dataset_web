@@ -114,6 +114,17 @@
     const bulkAnalyzeButton = document.getElementById('bulk-analyze');
     const selectAllButton = document.getElementById('select-all');
 
+    manifest.forEach(item => {
+      item.in_trash = Boolean(item.in_trash);
+      if (!item.keyword) {
+        item.keyword = '(未标注)';
+      }
+      if (!item.source) {
+        item.source = '';
+      }
+      item.trash_reason = item.trash_reason || null;
+    });
+
     const stateKey = 'pest-review-state.v1';
     const analysisCache = {};
     const pendingAnalysis = new Set();
@@ -140,9 +151,64 @@
 
     const API_BASE = resolveApiBase();
 
+    const TRASH_REASON_FALLBACK = '__none__';
+
+    function normalizeReason(reason) {
+      if (!reason) return TRASH_REASON_FALLBACK;
+      return reason;
+    }
+
+    function formatReason(reason) {
+      if (!reason || reason === TRASH_REASON_FALLBACK) return '未标记';
+      return reason
+        .replace(/\.trash\//g, ' / ')
+        .replace(/_/g, ' ');
+    }
+
+    function encodeSelection(selection) {
+      if (!selection) return '';
+      if (selection.type === 'trash') {
+        return `trash|${selection.keyword}|${selection.reason}`;
+      }
+      return `class|${selection.keyword}`;
+    }
+
+    function decodeSelection(value) {
+      if (!value) return null;
+      const parts = value.split('|');
+      if (parts[0] === 'class') {
+        return { type: 'class', keyword: parts[1] };
+      }
+      if (parts[0] === 'trash') {
+        return { type: 'trash', keyword: parts[1], reason: parts[2] || TRASH_REASON_FALLBACK };
+      }
+      return null;
+    }
+
+    function selectionMatchesItem(selection, item) {
+      if (!selection) return false;
+      if (selection.type === 'class') {
+        return !item.in_trash && item.keyword === selection.keyword;
+      }
+      if (selection.type === 'trash') {
+        return item.in_trash && item.keyword === selection.keyword && normalizeReason(item.trash_reason) === selection.reason;
+      }
+      return false;
+    }
+
+    function selectionLabel(selection) {
+      if (!selection) return '';
+      if (selection.type === 'trash') {
+        const reasonText = formatReason(selection.reason);
+        return `回收站 · ${selection.keyword}${reasonText ? ` · ${reasonText}` : ''}`;
+      }
+      return selection.keyword;
+    }
+
     function computeKeywordStats() {
       const counts = new Map();
       manifest.forEach(item => {
+        if (item.in_trash) return;
         const key = item.keyword;
         counts.set(key, (counts.get(key) || 0) + 1);
       });
@@ -151,11 +217,34 @@
         .sort((a, b) => a.keyword.localeCompare(b.keyword));
     }
 
+    function computeTrashGroups() {
+      const groups = new Map();
+      manifest.forEach(item => {
+        if (!item.in_trash) return;
+        const reasonKey = normalizeReason(item.trash_reason);
+        const reasonLabel = formatReason(item.trash_reason);
+        const keyword = item.keyword || '(未标注)';
+        const key = `${keyword}||${reasonKey}`;
+        if (!groups.has(key)) {
+          groups.set(key, { keyword, reasonKey, reasonLabel, count: 0 });
+        }
+        groups.get(key).count += 1;
+      });
+      return Array.from(groups.values())
+        .sort((a, b) => {
+          const kw = a.keyword.localeCompare(b.keyword);
+          if (kw !== 0) return kw;
+          return a.reasonKey.localeCompare(b.reasonKey);
+        });
+    }
+
     function populateKeywordOptions(preserveSelection = true) {
-      const current = preserveSelection ? keywordSelect.value : '';
+      const currentValue = preserveSelection ? keywordSelect.value : '';
       const stats = computeKeywordStats();
+      const trashStats = computeTrashGroups();
       keywordSelect.innerHTML = '';
-      if (stats.length === 0) {
+
+      if (stats.length === 0 && trashStats.length === 0) {
         const placeholder = document.createElement('option');
         placeholder.value = '';
         placeholder.textContent = '无待审条目';
@@ -163,17 +252,37 @@
         keywordSelect.value = '';
         return;
       }
+
       stats.forEach(({ keyword, count }) => {
         const option = document.createElement('option');
-        option.value = keyword;
+        option.value = encodeSelection({ type: 'class', keyword });
         option.textContent = `${keyword} (${count})`;
         keywordSelect.appendChild(option);
       });
-      if (current && stats.some(item => item.keyword === current)) {
-        keywordSelect.value = current;
-      } else {
-        keywordSelect.value = stats[0].keyword;
+
+      if (trashStats.length > 0) {
+        const divider = document.createElement('option');
+        divider.textContent = '—— 回收站 ——';
+        divider.disabled = true;
+        divider.value = '';
+        keywordSelect.appendChild(divider);
+
+        trashStats.forEach(({ keyword, reasonKey, reasonLabel, count }) => {
+          const option = document.createElement('option');
+          option.value = encodeSelection({ type: 'trash', keyword, reason: reasonKey });
+          option.textContent = `【回收站】${keyword} · ${reasonLabel} (${count})`;
+          keywordSelect.appendChild(option);
+        });
       }
+
+      const selectable = Array.from(keywordSelect.options).filter(opt => !opt.disabled && opt.value);
+      if (selectable.length === 0) {
+        keywordSelect.value = '';
+        return;
+      }
+
+      const match = selectable.find(opt => opt.value === currentValue);
+      keywordSelect.value = match ? match.value : selectable[0].value;
     }
 
     function saveState() {
@@ -206,8 +315,8 @@
       renderGallery();
     }
 
-    function clearStatusForKeyword(keyword) {
-      manifest.filter(item => item.keyword === keyword).forEach(item => {
+    function clearStatusForSelection(selection) {
+      manifest.filter(item => selectionMatchesItem(selection, item)).forEach(item => {
         if (state[item.id]) {
           delete state[item.id];
         }
@@ -230,6 +339,13 @@
       const target = manifest.find(entry => entry.id === id);
       if (target) {
         Object.assign(target, updates);
+        if (updates.path) {
+          const inTrash = updates.path.includes('/.trash/');
+          target.in_trash = inTrash;
+          if (!inTrash) {
+            target.trash_reason = null;
+          }
+        }
       }
     }
 
@@ -438,11 +554,11 @@
     }
 
     function renderGallery() {
-      const keyword = keywordSelect.value;
+      const selection = decodeSelection(keywordSelect.value);
       const filter = statusFilter.value;
       gallery.innerHTML = '';
 
-      if (!keyword) {
+      if (!selection) {
         const empty = document.createElement('div');
         empty.textContent = '暂无待审核图片';
         empty.style.padding = '12px';
@@ -451,7 +567,7 @@
         return;
       }
 
-      const filtered = manifest.filter(item => item.keyword === keyword);
+      const filtered = manifest.filter(item => selectionMatchesItem(selection, item));
       filtered.forEach(item => {
         const currentStatus = getStatus(item.id);
         if (filter !== 'all' && currentStatus !== filter) {
@@ -479,9 +595,19 @@
 
         const meta = document.createElement('div');
         meta.className = 'meta';
+        const pills = [
+          `<span class="pill">${item.keyword}</span>`,
+          `<span class="pill">${item.source}</span>`,
+        ];
+        if (item.in_trash) {
+          pills.push('<span class="pill" style="background:#fef3c7;color:#92400e;">回收站</span>');
+          const reasonText = formatReason(item.trash_reason ? item.trash_reason : TRASH_REASON_FALLBACK);
+          if (reasonText) {
+            pills.push(`<span class="pill" style="background:#fef9c3;color:#78350f;">${reasonText}</span>`);
+          }
+        }
         meta.innerHTML = `
-          <span class="pill">${item.keyword}</span>
-          <span class="pill">${item.source}</span>
+          ${pills.join(' ')}
           <div style="margin-top:4px;">${item.path}</div>
         `;
         card.appendChild(meta);
@@ -531,6 +657,8 @@
         keyword: item.keyword,
         source: item.source,
         path: item.path,
+        in_trash: Boolean(item.in_trash),
+        trash_reason: item.trash_reason || null,
         status: getStatus(item.id),
       }));
       const blob = new Blob([JSON.stringify(output, null, 2)], { type: 'application/json' });
@@ -576,10 +704,11 @@
     });
 
     resetButton.addEventListener('click', () => {
-      const keyword = keywordSelect.value;
-      if (!keyword) return;
-      if (confirm(`确定重置类别 “${keyword}” 的全部审核记录？`)) {
-        clearStatusForKeyword(keyword);
+      const selection = decodeSelection(keywordSelect.value);
+      if (!selection) return;
+      const label = selectionLabel(selection);
+      if (confirm(`确定重置 “${label}” 的全部审核记录？`)) {
+        clearStatusForSelection(selection);
       }
     });
 
