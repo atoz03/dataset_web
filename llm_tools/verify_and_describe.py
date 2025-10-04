@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import logging
 from typing import Dict, Any
+import concurrent.futures
 
 import requests
 
@@ -172,20 +173,72 @@ class XmdbdVLMClient:
                 )
 
 
+def _get_target_dir(rejected_dir: Path, expected_class: str, result: Dict[str, Any]) -> Path:
+    """Determine the target directory for a rejected image."""
+    actual_class = result.get("actual_class")
+    if actual_class and isinstance(actual_class, str) and actual_class.strip():
+        # Sanitize the class name to be a valid directory name
+        sanitized_class = "".join(c for c in actual_class.strip().lower() if c.isalnum() or c in (' ', '_')).rstrip().replace(' ', '_')
+        return rejected_dir / sanitized_class
+    # Fallback to the original expected class directory
+    return rejected_dir / expected_class
+
+
+def _process_single_image(
+    client: XmdbdVLMClient,
+    image_path: Path,
+    expected_class: str,
+    action: str,
+    rejected_dir: Path,
+    output_metadata: bool
+) -> None:
+    """Analyzes a single image and performs the required action."""
+    try:
+        result = client.analyze_image(image_path, expected_class)
+
+        if not result.get("is_match"):
+            reason = result.get('rejection_reason', 'No reason provided')
+            logging.warning(f"REJECTED: {image_path}. Reason: {reason}")
+
+            if action == "move":
+                target_dir = _get_target_dir(rejected_dir, expected_class, result)
+                target_dir.mkdir(parents=True, exist_ok=True)
+                image_path.rename(target_dir / image_path.name)
+            elif action == "delete":
+                image_path.unlink()
+            elif action == "dry-run":
+                target_dir = _get_target_dir(rejected_dir, expected_class, result)
+                target_path = target_dir / image_path.name
+                logging.info("[dry-run] Would move %s to %s", image_path, target_path)
+        else:
+            logging.info(f"ACCEPTED: {image_path}")
+            if output_metadata and action != "dry-run":
+                metadata_path = image_path.with_suffix('.json')
+                with open(metadata_path, 'w', encoding='utf-8') as f:
+                    json.dump(result, f, ensure_ascii=False, indent=2)
+
+    except VLMAPIError as exc:
+        logging.error("Failed to process %s: %s", image_path, exc)
+    except Exception as exc:  # pragma: no cover - defensive guard
+        logging.exception("Unexpected error while processing %s", image_path)
+
+
 def process_directory(
     client: XmdbdVLMClient,
     root_dir: Path,
     action: str = "move",
-    output_metadata: bool = True
+    output_metadata: bool = True,
+    max_workers: int = 4
 ) -> None:
     """
-    处理指定目录下的所有图像。
+    Concurrently processes all images in a directory using a thread pool.
 
     Args:
         client: VLM API 客户端。
         root_dir: 要处理的根目录 (例如 `datasets/diseases`)。
-        action: 对不匹配的图像执行的操作 ('move' 或 'delete')。
+        action: 对不匹配的图像执行的操作 ('move', 'delete', 'dry-run')。
         output_metadata: 是否为匹配的图像生成元数据文件。
+        max_workers: 用于处理图像的并发工作线程数。
     """
     if not root_dir.is_dir():
         logging.error(f"Error: Directory not found at {root_dir}")
@@ -195,57 +248,57 @@ def process_directory(
     if action == "move":
         rejected_dir.mkdir(exist_ok=True)
 
-    image_extensions = ['.jpg', '.jpeg', '.png', '.webp']
-    
-    # 遍历所有子目录（即类别目录）
-    for class_dir in root_dir.iterdir():
-        if not class_dir.is_dir() or class_dir.name.startswith('.'):
-            continue
+    image_extensions = {'.jpg', '.jpeg', '.png', '.webp'}
+    tasks = []
 
-        expected_class = class_dir.name
-        logging.info(f"--- Processing class: {expected_class} ---")
-
-        for image_path in class_dir.rglob('*'):
+    # Check if root_dir itself is a class directory (i.e., contains image files directly)
+    if any(p.is_file() and p.suffix.lower() in image_extensions for p in root_dir.glob('*')):
+        logging.info("Root directory appears to be a single class directory. Processing it directly.")
+        expected_class = root_dir.name
+        for image_path in root_dir.rglob('*'):
             if image_path.is_file() and image_path.suffix.lower() in image_extensions:
-                try:
-                    result = client.analyze_image(image_path, expected_class)
+                tasks.append((image_path, expected_class))
+    else:
+        logging.info("Scanning for images in subdirectories...")
+        for class_dir in root_dir.iterdir():
+            if not class_dir.is_dir() or class_dir.name.startswith('.'):
+                continue
+            
+            expected_class = class_dir.name
+            for image_path in class_dir.rglob('*'):
+                if image_path.is_file() and image_path.suffix.lower() in image_extensions:
+                    tasks.append((image_path, expected_class))
 
-                    if not result.get("is_match"):
-                        reason = result.get('rejection_reason')
-                        logging.warning(f"REJECTED: {image_path}. Reason: {reason}")
-                        if action == "move":
-                            actual_class = result.get("actual_class")
-                            if actual_class and isinstance(actual_class, str) and actual_class.strip():
-                                # Sanitize the class name to be a valid directory name
-                                sanitized_class = "".join(c for c in actual_class.strip().lower() if c.isalnum() or c in (' ', '_')).rstrip().replace(' ', '_')
-                                target_dir = rejected_dir / sanitized_class
-                            else:
-                                # Fallback to old behavior
-                                target_dir = rejected_dir / expected_class
-                            
-                            target_dir.mkdir(parents=True, exist_ok=True)
-                            image_path.rename(target_dir / image_path.name)
-                        elif action == "delete":
-                            image_path.unlink()
-                        elif action == "dry-run":
-                            actual_class = result.get("actual_class")
-                            if actual_class and isinstance(actual_class, str) and actual_class.strip():
-                                sanitized_class = "".join(c for c in actual_class.strip().lower() if c.isalnum() or c in (' ', '_')).rstrip().replace(' ', '_')
-                                target_path = rejected_dir / sanitized_class / image_path.name
-                            else:
-                                target_path = rejected_dir / expected_class / image_path.name
-                            logging.info("[dry-run] Would move to %s", target_path)
-                    else:
-                        logging.info(f"ACCEPTED: {image_path}")
-                        if output_metadata and action != "dry-run":
-                            metadata_path = image_path.with_suffix('.json')
-                            with open(metadata_path, 'w', encoding='utf-8') as f:
-                                json.dump(result, f, ensure_ascii=False, indent=2)
+    if not tasks:
+        logging.info("No images found to process.")
+        return
 
-                except VLMAPIError as exc:
-                    logging.error("Failed to process %s: %s", image_path, exc)
-                except Exception as exc:  # pragma: no cover - defensive guard
-                    logging.exception("Unexpected error while processing %s", image_path)
+    logging.info(f"Found {len(tasks)} images. Starting processing with {max_workers} workers...")
+    
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        # Create a dictionary to hold future-to-task mapping for error reporting
+        future_to_task = {
+            executor.submit(
+                _process_single_image,
+                client,
+                image_path,
+                expected_class,
+                action,
+                rejected_dir,
+                output_metadata
+            ): (image_path, expected_class)
+            for image_path, expected_class in tasks
+        }
+
+        for future in concurrent.futures.as_completed(future_to_task):
+            task_info = future_to_task[future]
+            try:
+                future.result()  # We call result() to raise any exceptions from the thread
+            except Exception as exc:  # pragma: no cover - defensive guard
+                logging.exception(
+                    "A task for image %s in class %s generated an unhandled exception.",
+                    task_info[0], task_info[1]
+                )
 
 def main():
     parser = argparse.ArgumentParser(
@@ -304,6 +357,12 @@ def main():
         action="store_true",
         help="If set, do not write .json metadata files for accepted images."
     )
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=int(os.environ.get("VLM_WORKERS", "4")),
+        help="Number of concurrent workers for processing images. Defaults to 4 or VLM_WORKERS env var."
+    )
 
     args = parser.parse_args()
 
@@ -335,7 +394,8 @@ def main():
         client,
         root_path,
         action=args.action,
-        output_metadata=not args.no_metadata
+        output_metadata=not args.no_metadata,
+        max_workers=args.workers
     )
 
     logging.info("Processing complete.")

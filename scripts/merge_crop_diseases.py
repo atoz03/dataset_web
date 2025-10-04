@@ -18,17 +18,23 @@ practically impossible, but the check is kept for safety when resuming).
 
 from __future__ import annotations
 
+import concurrent.futures
 import os
 import sys
 import uuid
 from pathlib import Path
-from typing import Dict, Iterable, Tuple
+from typing import Dict, Iterable, List, Tuple
+
+from tqdm import tqdm
 
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPT_DIR.parent
 SRC_ROOT = REPO_ROOT / "Crop Diseases"
 DST_ROOT = REPO_ROOT / "datasets" / "diseases"
+
+# Number of parallel workers for copying files
+MAX_WORKERS = os.cpu_count() or 4
 
 # Explicit mapping from source folder name to target class folder name
 CLASS_MAP: Dict[str, str] = {
@@ -109,6 +115,16 @@ def copy_file(src: Path, dst_dir: Path, new_name: str) -> Tuple[bool, Path]:
     return True, dst_path
 
 
+def process_file(task: Tuple[Path, Path, str]) -> str:
+    """Worker function to process a single file."""
+    src_path, dst_dir, target_class = task
+    if not is_image(src_path):
+        return "skipped_non_image"
+    new_name = rename_for(target_class, src_path)
+    copied, _ = copy_file(src_path, dst_dir, new_name)
+    return "copied" if copied else "skipped_exists"
+
+
 def main() -> int:
     if not SRC_ROOT.exists():
         print(f"Source folder not found: {SRC_ROOT}", file=sys.stderr)
@@ -123,33 +139,46 @@ def main() -> int:
         for c in unmapped:
             print(f"  - {c}", file=sys.stderr)
 
-    total = 0
-    copied = 0
-    skipped_non_images = 0
+    # 1. Collect all file processing tasks
+    tasks: List[Tuple[Path, Path, str]] = []
     for src_class, target_class in CLASS_MAP.items():
         src_dir = SRC_ROOT / src_class
         if not src_dir.exists():
-            print(f"[SKIP] Missing: {src_dir}")
+            print(f"[INFO] Source directory not found, skipping: {src_dir}")
             continue
         dst_dir = DST_ROOT / target_class
         ensure_dir(dst_dir)
-        print(f"[MERGE] {src_class} -> {target_class}")
+        print(f"[PREP] Scanning {src_class} -> {target_class}")
         for f in iter_files(src_dir):
-            total += 1
-            if not is_image(f):
-                skipped_non_images += 1
-                continue
-            new_name = rename_for(target_class, f)
-            ok, out = copy_file(f, dst_dir, new_name)
-            if ok:
-                copied += 1
-            # else: collision skip (extremely rare due to UUID)
+            tasks.append((f, dst_dir, target_class))
+
+    if not tasks:
+        print("\nNo files found to process.")
+        return 0
+
+    # 2. Process files in parallel
+    print(f"\nStarting parallel copy with {MAX_WORKERS} workers...")
+    copied = 0
+    skipped_non_images = 0
+    skipped_exists = 0
+    with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        # Use tqdm for a progress bar
+        results = list(tqdm(executor.map(process_file, tasks), total=len(tasks), desc="Copying images"))
+
+    for result in results:
+        if result == "copied":
+            copied += 1
+        elif result == "skipped_non_image":
+            skipped_non_images += 1
+        elif result == "skipped_exists":
+            skipped_exists += 1
 
     print("\nSummary:")
-    print(f"  Total files seen: {total}")
-    print(f"  Images copied:    {copied}")
+    print(f"  Total files seen:   {len(tasks)}")
+    print(f"  Images copied:      {copied}")
+    print(f"  Existing skipped:   {skipped_exists}")
     print(f"  Non-images skipped: {skipped_non_images}")
-    print(f"  Output root:      {DST_ROOT}")
+    print(f"  Output root:        {DST_ROOT}")
     return 0
 
 

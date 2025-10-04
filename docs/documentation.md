@@ -217,12 +217,14 @@ datasets/
         --port 5178 \
         --root web_scraper/scraped_images \
         --allow-root datasets/pests \
+        --workers 4 \
         --verbose
     ```
   - **核心配置**:
     - 服务启动时会优先从环境变量 `VLM_API_KEY` 读取密钥。如果未设置，服务将自动退回到模拟（mock）模式，**不会调用外部接口**。
     - `--root`: 指定待审核图片所在的根目录。
     - `--allow-root`: 指定允许图片被移动到的目标根目录（出于安全考虑，只有白名单内的目录才能写入）。
+    - `--workers`: 指定并发分析图像的工作线程数（默认为 4），提高批量分析效率。
     - `--verbose`: 开启详细日志，便于排查问题。
     - 若暂未配置密钥，可加 `--mock` 强制运行在模拟模式，此时页面会返回占位分析结果，用于 UI 验证。
   - **常见问题排查**:
@@ -249,10 +251,16 @@ datasets/
 
 - 使用方法:
   - 顶部下拉选择“类别”，逐张标记“通过/剔除/重置”。
-  - 每张卡片新增“LLM 分析”按钮：点击后，页面会通过本地后端调用多模态大模型获取判定结果、质量评分与双语描述。
+  - **批量分析**:
+    - 每张卡片左上角新增**复选框**，可勾选多个项目。
+    - 控制栏新增“**全选**”按钮，可快速选中/取消当前类别的所有图片。
+    - 控制栏新增“**分析选中项**”按钮，点击后将并发请求后端，对所有选中项进行 LLM 分析，显著提高效率。
+  - **单张分析**: 每张卡片保留“LLM 分析”按钮，用于对单个图像进行快速分析。
+  - **分析后操作**:
     - 若模型判定“不匹配”，会给出候选类目；可直接在页面内调整目标类，并选择重命名策略后执行移动。
     - 执行成功后，`pest_review_manifest.js` 会自动刷新对应条目，状态被重置为“待审核”。
-  - 支持导入/导出 JSON：页面会把决策持久化到浏览器 `localStorage`，点击“下载审核结果 JSON”用于后续脚本。
+  - **数据持久化**:
+    - 支持导入/导出 JSON：页面会把决策持久化到浏览器 `localStorage`，点击“下载审核结果 JSON”用于后续脚本。
   - 审核完成后，使用 3.4.1 节的脚本并入主数据集。
 
 <a id="sec-3-4-1"></a>
@@ -277,7 +285,9 @@ datasets/
 -   **目的**: 在大规模生成标注前，利用多模态大模型（VLM）对图像进行最后一次智能审核，确保内容与标签匹配，并生成更丰富的描述。
 -   **脚本**: `llm_tools/verify_and_describe.py`
 -   **核心功能**:
+    -   **并发处理**: 利用多线程并发调用 VLM API，可通过 `--workers` 参数控制并发数，大幅提升处理速度。
     -   **语义验证**: 检查图像内容是否真的与其所属的类别目录名相符。
+    -   **灵活的目录支持**: `--root` 参数既可以指向包含多个类别的父目录（如 `datasets/diseases`），也可以直接指向单个类别目录（如 `datasets/diseases/Apple Scab Leaf`）。
     -   **质量过滤**: 自动隔离内容不符或质量低下的图片（如插画、截图、无关物体）。
     -   **描述增强**: 为通过验证的图片生成更自然、详细的中英双语描述。
 -   **安全操作**:
@@ -304,13 +314,14 @@ datasets/
   - `VLM_API_BASE`：默认 `https://xmdbd.online/v1`。
   - `VLM_MODEL`：默认 `gemini-2.5-flash`。
   - `VLM_TIMEOUT`：请求超时秒数，默认 `120`。
+  - `VLM_WORKERS`：并发工作线程数，默认 `4`。
   - `VLM_VERIFY_SSL`：`true|false`，默认为 `true`；若服务端证书链未完善，可设为 `false` 或在 CLI 使用 `--insecure`。
 
 - 运行示例
-  - 干跑（不改动文件）：
-    - `python3 llm_tools/verify_and_describe.py --root datasets/diseases --action dry-run --insecure`
-  - 实际执行（接受即写 `.json` 元数据，拒绝移动/删除）：
-    - `python3 llm_tools/verify_and_describe.py --root datasets/diseases --model gemini-2.5-flash --insecure`
+  - 干跑（不改动文件，使用 8 个并发线程）：
+    - `python3 llm_tools/verify_and_describe.py --root datasets/diseases --action dry-run --workers 8 --insecure`
+  - 实际执行（针对单个类目，接受即写 `.json` 元数据，拒绝移动/删除）：
+    - `python3 llm_tools/verify_and_describe.py --root "datasets/diseases/Apple Scab Leaf" --model gemini-2.5-flash --workers 4 --insecure`
 
 - 日志要点
   - 默认 `INFO` 级别；输出 `ACCEPTED/REJECTED` 与原因；dry-run 模式会显示“将要移动”的目标路径。

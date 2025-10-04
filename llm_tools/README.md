@@ -3,9 +3,11 @@
 本项目提供了一个利用多模态大语言模型（VLM，如 GPT-4V 或 Gemini）API 来自动化提升图像数据集质量的工具。
 
 核心脚本 `verify_and_describe.py` 能够：
-1.  **语义验证**: 检查并确保目录中的每张图片都与其所属的类别（由父文件夹名定义）在语义上匹配。
-2.  **质量评估与过滤**: 自动识别并隔离内容不符、质量低下（如截图、插画）的图片。
-3.  **丰富化标注**: 为通过验证的图片生成比模板更自然、更详细的中英双语描述。
+1.  **并发处理**: 利用多线程并发调用 VLM API，可通过 `--workers` 参数控制并发数，大幅提升处理速度。
+2.  **语义验证**: 检查并确保目录中的每张图片都与其所属的类别（由父文件夹名定义）在语义上匹配。
+3.  **灵活的目录支持**: `--root` 参数既可以指向包含多个类别的父目录（如 `datasets/diseases`），也可以直接指向单个类别目录（如 `datasets/diseases/Apple Scab Leaf`）。
+4.  **质量评估与过滤**: 自动识别并隔离内容不符、质量低下（如截图、插画）的图片。
+5.  **丰富化标注**: 为通过验证的图片生成比模板更自然、更详细的中英双语描述。
 
 这个工具旨在作为现有数据处理工作流的一个重要补充环节，特别是在人工审核之后、生成最终标注文件之前，引入一层智能化的自动校验。
 
@@ -46,6 +48,7 @@ pip install requests
 echo "VLM_API_KEY=sk-your-api-key-here" >> .env
 echo "VLM_API_BASE=https://xmdbd.online/v1" >> .env
 echo "VLM_MODEL=gemini-2.5-flash" >> .env
+echo "VLM_WORKERS=8" >> .env
 ```
 
 运行脚本之前执行 `export $(grep -v '^#' .env | xargs)` 载入变量，或者直接在终端中 `export VLM_API_KEY=...`。也可以通过命令行参数传入。
@@ -64,20 +67,23 @@ echo "VLM_MODEL=gemini-2.5-flash" >> .env
 在项目根目录下执行以下命令，对指定的数据集目录进行处理。
 
 ```bash
-# 对 'datasets/diseases' 目录进行处理
+# 使用 8 个并发线程对 'datasets/diseases' 目录进行处理
 # 不匹配的图片将被移动到 'datasets/diseases/.rejected_by_llm/'
 python3 llm_tools/verify_and_describe.py \
-    --root datasets/diseases
-
-# 如果您想进行“演练”，只打印日志而不移动或删除文件
-python3 llm_tools/verify_and_describe.py \
     --root datasets/diseases \
-    --action dry-run
+    --workers 8
+
+# 对单个类别目录进行“演练”，只打印日志而不移动文件
+python3 llm_tools/verify_and_describe.py \
+    --root "datasets/diseases/Apple Scab Leaf" \
+    --action dry-run \
+    --workers 4
 
 # 如果您确认要直接删除不匹配的图片（危险操作！）
 python3 llm_tools/verify_and_describe.py \
     --root datasets/diseases \
-    --action delete
+    --action delete \
+    --workers 8
 ```
 
 ### 第 5 步：后续步骤
