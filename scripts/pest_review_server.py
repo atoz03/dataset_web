@@ -22,11 +22,12 @@ import logging
 import os
 import threading
 import uuid
+import concurrent.futures
 from dataclasses import dataclass
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, List
 import sys
 
 # Add project root to Python path to allow sibling imports
@@ -54,6 +55,7 @@ class ServerConfig:
     allow_roots: tuple[Path, ...]
     vlm_client: Optional[XmdbdVLMClient]
     mock_mode: bool
+    max_workers: int
 
 
 class PestReviewService:
@@ -121,32 +123,54 @@ class PestReviewService:
         entry["path"] = str(rel_dest).replace(os.sep, "/")
         self._write_manifest_locked()
 
-    def analyze(self, rel_path: str, keyword: Optional[str] = None) -> Dict[str, Any]:
-        path = self._resolve(rel_path)
-        expected = keyword or path.parent.name
-        LOGGER.info("Analyze request for %s (expected=%s)", path, expected)
+    def analyze(self, items: List[Dict[str, str]]) -> List[Dict[str, Any]]:
+        """Concurrently analyzes a batch of images."""
+        results = []
+        vlm_client = self._config.vlm_client
 
-        if not self._config.vlm_client:
-            LOGGER.warning("VLM client unavailable; returning mock payload")
-            # Provide a deterministic mock to ease front-end development
-            return {
-                "mock": True,
-                "is_match": True,
-                "actual_class": expected,
-                "quality_score": 0.75,
-                "rejection_reason": None,
-                "description_en": f"Placeholder analysis for {expected}.",
-                "description_zh": f"关于 {expected} 的占位分析。",
-            }
+        if not vlm_client:
+            LOGGER.warning("VLM client unavailable; returning mock payloads")
+            for item in items:
+                path = self._resolve(item["path"])
+                expected = item.get("keyword") or path.parent.name
+                results.append({
+                    "path": item["path"],
+                    "analysis": {
+                        "mock": True,
+                        "is_match": True,
+                        "actual_class": expected,
+                        "quality_score": 0.75,
+                        "rejection_reason": None,
+                        "description_en": f"Placeholder analysis for {expected}.",
+                        "description_zh": f"关于 {expected} 的占位分析。",
+                    }
+                })
+            return results
 
-        try:
-            result = self._config.vlm_client.analyze_image(path, expected)
-        except (FileNotFoundError, VLMAPIError) as exc:
-            LOGGER.error("Analysis failed: %s", exc)
-            raise
+        def _analyze_one(item: Dict[str, str]) -> Dict[str, Any]:
+            rel_path = item["path"]
+            try:
+                path = self._resolve(rel_path)
+                expected = item.get("keyword") or path.parent.name
+                LOGGER.info("Analyzing %s (expected=%s)", path, expected)
+                analysis = vlm_client.analyze_image(path, expected)
+                analysis.setdefault("mock", False)
+                return {"path": rel_path, "analysis": analysis}
+            except (FileNotFoundError, VLMAPIError, PermissionError, ValueError) as exc:
+                LOGGER.error("Analysis for %s failed: %s", rel_path, exc)
+                return {"path": rel_path, "error": str(exc)}
 
-        result.setdefault("mock", False)
-        return result
+        with concurrent.futures.ThreadPoolExecutor(max_workers=self._config.max_workers) as executor:
+            future_to_item = {executor.submit(_analyze_one, item): item for item in items}
+            for future in concurrent.futures.as_completed(future_to_item):
+                try:
+                    results.append(future.result())
+                except Exception as exc:
+                    item = future_to_item[future]
+                    LOGGER.exception("Unhandled exception for item %s", item)
+                    results.append({"path": item["path"], "error": f"Unhandled exception: {exc}"})
+        
+        return results
 
     # ------------------------------------------------------------------
     # File operations
@@ -290,27 +314,25 @@ class PestReviewRequestHandler(BaseHTTPRequestHandler):
     # Handlers
     # --------------------------------------------------------------
     def _handle_analyze(self, payload: Dict[str, Any]) -> None:
-        rel_path = payload.get("path")
-        keyword = payload.get("keyword")
-        if not rel_path:
-            self._send_json({"error": "missing_path"}, HTTPStatus.BAD_REQUEST)
+        items = payload.get("items")
+        if not isinstance(items, list) or not items:
+            self._send_json({"error": "missing_items"}, HTTPStatus.BAD_REQUEST)
             return
+        
+        # Basic validation for each item
+        for item in items:
+            if not isinstance(item, dict) or "path" not in item:
+                self._send_json({"error": "invalid_item_format"}, HTTPStatus.BAD_REQUEST)
+                return
+
         try:
-            result = self.service.analyze(rel_path, keyword)
-        except FileNotFoundError:
-            self._send_json({"error": "not_found"}, HTTPStatus.NOT_FOUND)
-            return
-        except PermissionError:
-            self._send_json({"error": "forbidden"}, HTTPStatus.FORBIDDEN)
-            return
-        except ValueError as exc:
-            self._send_json({"error": "bad_request", "message": str(exc)}, HTTPStatus.BAD_REQUEST)
-            return
-        except VLMAPIError as exc:  # type: ignore
-            self._send_json({"error": "vlm_error", "message": str(exc)}, HTTPStatus.BAD_GATEWAY)
+            results = self.service.analyze(items)
+        except Exception as exc:
+            LOGGER.exception("Unexpected error during bulk analysis")
+            self._send_json({"error": "internal_server_error", "message": str(exc)}, HTTPStatus.INTERNAL_SERVER_ERROR)
             return
 
-        self._send_json({"data": result})
+        self._send_json({"data": results})
 
     def _handle_reclassify(self, payload: Dict[str, Any]) -> None:
         item_id = payload.get("id")
@@ -404,6 +426,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--no-verify-ssl", dest="verify_ssl", action="store_false", default=True)
     parser.add_argument("--mock", action="store_true", help="Force mock responses (no network)")
     parser.add_argument("--verbose", action="store_true", help="Enable debug logging")
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=int(os.environ.get("VLM_WORKERS", "4")),
+        help="Number of concurrent workers for VLM analysis. Defaults to 4.",
+    )
     return parser.parse_args()
 
 
@@ -438,6 +466,7 @@ def main() -> None:
         allow_roots=tuple(allowed),
         vlm_client=vlm_client,
         mock_mode=vlm_client is None,
+        max_workers=args.workers,
     )
     service = PestReviewService(config)
 

@@ -17,7 +17,8 @@
     button.secondary { background: #e5e7eb; border: none; cursor: pointer; }
     button.secondary:hover { background: #d1d5db; }
     .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
-    .card { background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.2); padding: 10px; display: flex; flex-direction: column; }
+    .card { background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.2); padding: 10px; display: flex; flex-direction: column; position: relative; }
+    .card .selection-checkbox { position: absolute; top: 16px; left: 16px; width: 20px; height: 20px; }
     .card img { width: 100%; height: 160px; object-fit: cover; border-radius: 6px; margin-bottom: 8px; background: #e5e7eb; }
     .card .meta { font-size: 13px; margin-bottom: 8px; color: #4b5563; }
     .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; margin-right: 6px; background: #e0f2fe; color: #0369a1; }
@@ -82,6 +83,12 @@
       <div>
         <button id="reset-all" class="secondary">重置当前类别</button>
       </div>
+      <div>
+        <button id="bulk-analyze" class="primary">分析选中项</button>
+      </div>
+      <div>
+        <button id="select-all" class="secondary">全选</button>
+      </div>
     </section>
 
     <section class="gallery" id="gallery"></section>
@@ -104,6 +111,8 @@
     const downloadButton = document.getElementById('download-json');
     const uploadInput = document.getElementById('upload-json');
     const resetButton = document.getElementById('reset-all');
+    const bulkAnalyzeButton = document.getElementById('bulk-analyze');
+    const selectAllButton = document.getElementById('select-all');
 
     const stateKey = 'pest-review-state.v1';
     const analysisCache = {};
@@ -334,32 +343,57 @@
       card.appendChild(analysisEl);
     }
 
-    async function analyzeItem(item) {
+    async function analyzeItems(items) {
+      if (!items || items.length === 0) {
+        alert('请先选择要分析的图片');
+        return;
+      }
       if (!API_BASE) {
         alert('未检测到后端服务，请先启动 pest_review_server.py');
         return;
       }
-      pendingAnalysis.add(item.id);
+
+      items.forEach(item => pendingAnalysis.add(item.id));
       renderGallery();
+
       try {
         const response = await fetch(`${API_BASE}/analyze`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ path: item.path, keyword: item.keyword }),
+          body: JSON.stringify({ items: items.map(item => ({ path: item.path, keyword: item.keyword })) }),
         });
         const payload = await response.json();
         if (!response.ok) {
           const message = payload?.message || payload?.error || `HTTP ${response.status}`;
           throw new Error(message);
         }
-        analysisCache[item.id] = { status: 'ok', data: payload.data };
+        
+        // Process bulk results
+        payload.data.forEach(result => {
+          const item = manifest.find(i => i.path === result.path);
+          if (item) {
+            if (result.error) {
+              analysisCache[item.id] = { status: 'error', message: result.error };
+            } else {
+              analysisCache[item.id] = { status: 'ok', data: result.analysis };
+            }
+          }
+        });
+
       } catch (error) {
         const message = error?.message || '未知错误';
-        analysisCache[item.id] = { status: 'error', message };
+        // Apply error to all selected items for user feedback
+        items.forEach(item => {
+          analysisCache[item.id] = { status: 'error', message };
+        });
       } finally {
-        pendingAnalysis.delete(item.id);
+        items.forEach(item => pendingAnalysis.delete(item.id));
         renderGallery();
       }
+    }
+
+    function analyzeItem(item) {
+      return analyzeItems([item]);
     }
 
     async function reclassifyItem(item, targetClass, renameMode, customName) {
@@ -425,6 +459,12 @@
         }
         const card = document.createElement('div');
         card.className = 'card';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = 'selection-checkbox';
+        checkbox.dataset.itemId = item.id;
+        card.appendChild(checkbox);
 
         const statusEl = document.createElement('div');
         statusEl.className = `status-tag ${statusClass(currentStatus)}`;
@@ -542,6 +582,30 @@
         clearStatusForKeyword(keyword);
       }
     });
+
+    bulkAnalyzeButton.addEventListener('click', () => {
+       const selectedCheckboxes = gallery.querySelectorAll('.selection-checkbox:checked');
+       if (selectedCheckboxes.length === 0) {
+         alert('请至少选择一张图片进行分析。');
+         return;
+       }
+       const itemsToAnalyze = Array.from(selectedCheckboxes).map(cb => {
+         const itemId = cb.dataset.itemId;
+         return manifest.find(item => item.id === itemId);
+       }).filter(Boolean);
+       
+       analyzeItems(itemsToAnalyze);
+    });
+
+   selectAllButton.addEventListener('click', () => {
+       const checkboxes = gallery.querySelectorAll('.selection-checkbox');
+       if (checkboxes.length === 0) return;
+       
+       const allSelected = Array.from(checkboxes).every(cb => cb.checked);
+       checkboxes.forEach(cb => {
+           cb.checked = !allSelected;
+       });
+   });
 
     populateKeywordOptions(false);
     renderGallery();
