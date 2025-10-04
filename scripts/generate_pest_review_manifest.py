@@ -5,11 +5,11 @@ Scans `web_scraper/scraped_images/` and writes
 `web_scraper/pest_review_manifest.js` with entries that actually exist.
 
 Rules:
-- Include files with image extensions only.
-- Exclude any path under a `.trash/` directory.
-- `keyword` is the first-level directory under `scraped_images/`.
-- `source` is the immediate parent directory of the image (e.g., `bing.com`).
-- `id` is sha1 of the repository-relative path used in `path`.
+- Include files with image extensions only。
+- `.trash/` 中的文件也会被纳入清单，但会标记 `in_trash=true` 并保留原始类目/来源信息。
+- `keyword` 使用图片所属的类目目录名（对于 `.trash/` 中的文件，仍保留原始类目）。
+- `source` 是图片的直接父目录（例如 `bing.com`）。
+- `id` 是基于仓库相对路径的 sha1。
 
 Usage:
   python3 scripts/generate_pest_review_manifest.py \
@@ -31,8 +31,6 @@ IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
 def iter_images(root: Path) -> Iterable[Path]:
     for p in root.rglob('*'):
         if not p.is_file():
-            continue
-        if any(tok == '.trash' for tok in p.parts):
             continue
         if p.suffix.lower() in IMAGE_EXTS:
             yield p
@@ -69,16 +67,44 @@ def main(argv: list[str]) -> int:
         parts = rel_to_root.parts
         if len(parts) < 1:
             continue
-        keyword = parts[0]
-        # source: immediate parent folder of the image
-        source = img.parent.name
 
-        items.append({
+        in_trash = parts[0] == '.trash'
+        keyword: str
+        source: str
+        trash_reason = None
+
+        if in_trash:
+            # fallback keyword/source if structure is unexpected
+            keyword = '__trash__'
+            source = ''
+            if len(parts) >= 2:
+                source = parts[-2] if len(parts) >= 2 else ''
+            if len(parts) >= 3:
+                keyword_candidate = parts[-3]
+                if keyword_candidate != '.trash':
+                    keyword = keyword_candidate
+            # capture intermediate segments as a joined trash reason for display
+            if len(parts) > 3:
+                reason_parts = [seg for seg in parts[1:-2] if seg and seg != '.trash']
+                if reason_parts and reason_parts[-1] == keyword:
+                    reason_parts = reason_parts[:-1]
+                if reason_parts:
+                    trash_reason = '/'.join(reason_parts)
+        else:
+            keyword = parts[0]
+            source = img.parent.name
+
+        entry = {
             'id': hashlib.sha1(rel_repo_posix.encode()).hexdigest(),
             'keyword': keyword,
             'source': source,
             'path': rel_repo_posix,
-        })
+            'in_trash': in_trash,
+        }
+        if trash_reason:
+            entry['trash_reason'] = trash_reason
+
+        items.append(entry)
 
     items.sort(key=lambda x: (x['keyword'], x['path']))
     payload = "const pestReviewManifest = " + json.dumps(items, indent=2) + ";\n"
@@ -89,4 +115,3 @@ def main(argv: list[str]) -> int:
 
 if __name__ == '__main__':
     raise SystemExit(main(__import__('sys').argv[1:]))
-
