@@ -104,6 +104,16 @@ python3 scripts/deduplicate_images.py \
     --action move
 ```
 
+### 第 3.4 步：人工核验（网页）
+
+对于爬虫抓取等来源不纯的数据，在并入主数据集前，可通过网页进行快速的人工抽查与核验。
+
+- **启动审核服务**: `python3 scripts/pest_review_server.py --root web_scraper/scraped_images`
+- **访问页面**: 在浏览器中打开 `docs/pest_manual_review.html`。
+- **导入结果**: 审核完成后，使用 `scripts/import_reviewed_pests.py` 将接受的图片并入主数据集。
+
+详情请参阅知识库 [`3.4 人工核验（网页）`](docs/documentation.md:207) 章节。
+
 ### 第 3.5 步：LLM 语义验证与描述增强（可选，推荐）
 
 利用多模态大模型（VLM）对图像进行语义一致性校验与描述增强（详情见 `llm_tools/README.md`）。

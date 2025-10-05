@@ -192,6 +192,24 @@ python3 -m http.server 8000
 # 在浏览器访问
 http://localhost:8000/docs/pest_manual_review.html
 ```
+- 启动智能审核后端（供 LLM 分析与安全文件操作）：
+  - **重要**: 所有命令都必须在**项目仓库的根目录**下执行。
+  - **命令示例**:
+    ```bash
+    # 在仓库根目录启动，监听 5178 端口
+    VLM_API_KEY=your_api_key_here python3 scripts/pest_review_server.py \
+        --port 5178 \
+        --root web_scraper/scraped_images \
+        --allow-root datasets/pests \
+        --workers 4
+    ```
+  - **核心配置**:
+    - 服务会优先从环境变量 `VLM_API_KEY` 读取密钥；若缺失则进入模拟模式。
+    - `--root`: 指定待审核图片根目录。
+    - `--allow-root`: 指定允许写入的目标根目录白名单。
+    - `--workers`: 并发分析线程数。
+    - 更多细节与问题排查，请参阅主知识库 `docs/documentation.md` 的 `3.4 人工核验（网页）` 章节。
+
 
 页面功能：
 

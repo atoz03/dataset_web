@@ -545,14 +545,6 @@ python3 scripts/build_jsonl.py \
   --out data.jsonl --train 0.8 --val 0.1 --test 0.1 --seed 42
 ```
 
-```bash
-# 伪代码（建议后续实现为 scripts/prepare_plant_pathology_2020.py）
-# 读取 sources/plant-pathology-2020-fgvc7/train.csv，按映射复制 train_images/* 到：
-#  datasets/diseases/Apple leaf/
-#  datasets/diseases/Apple rust leaf/
-#  datasets/diseases/Apple Scab Leaf/
-# 对于 multiple_diseases：复制到 datasets/diseases/Apple leaf/ 并在 JSONL 阶段标记 healthy=false。
-```
 
 3) Plant Pathology 2021（多标签/细粒度，苹果叶病害扩展）
 
@@ -628,6 +620,11 @@ python3 scripts/build_jsonl.py \
     -   **回收站挽救（Tenengrad/both 优化）**: 使用 `.venv/bin/python scripts/deduplicate_images.py --roots web_scraper/scraped_images --blur-method both --blur-threshold 60 --tenengrad-threshold 700 --rescue-blur --skip-clean` 对 `.trash/` 中 `blur_*` 进行复核与还原。
         -   统计: 扫描 1,519 条，成功还原 639 条；随后刷新清单至 8,600 条。
 
+-   **2025-10-05**:
+    -   **危急类别数据扩充**: 为解决模型训练数据严重不足的问题，针对 `docs/ChatGPT-VLM-MoE模型配置分析 (1).md` 中列出的17个“危急”类别，执行了紧急数据采集。
+    -   **爬虫执行**: 使用 `web_scraper/keywords_critical.txt` 作为关键词列表，运行 `agri_sites` 爬虫，从 GBIF 等数据源抓取了 539 张新图片。
+    -   **清洗**: 对 `web_scraper/scraped_images` 目录运行 `deduplicate_images.py` 脚本，移除了 4 张尺寸过小、911 张模糊和 233 张重复的图片。
+    -   **回收站挽救 再一次**: 使用 `.venv/bin/python scripts/deduplicate_images.py --roots web_scraper/scraped_images --blur-method both --blur-threshold 60 --tenengrad-threshold 700 --rescue-blur --skip-clean` 对 `.trash/` 中 `blur_*` 进行复核与还原。
 ---
 
 <a id="app-b"></a>
