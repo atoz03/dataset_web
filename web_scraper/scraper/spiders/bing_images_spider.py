@@ -22,6 +22,7 @@ class BingImagesSpider(scrapy.Spider):
 
     custom_settings = {
         'DOWNLOAD_TIMEOUT': 30,
+        'ROBOTSTXT_OBEY': False,
     }
 
     def __init__(self, keywords_file='keywords.txt', max_pages=1, page_size=35, *args, **kwargs):

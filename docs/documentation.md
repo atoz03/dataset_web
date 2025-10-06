@@ -27,6 +27,7 @@
   - [4.3 训练策略](#sec-4-3)
   - [4.4 评测指标](#sec-4-4)
 - [5. 未来规划与待办事项 (TODOs)](#sec-5)
+  - [5.1 🔴 重症监护](#sec-5-1)
 - [附录 A：数据来源与合并历史](#app-a)
   - [A.1 数据源列表](#app-a-1)
     - [A.1.1 Kaggle: New Plant Diseases / Plant Pathology（补全）](#app-a-1-1)
@@ -422,6 +423,30 @@ datasets/
 
 这是一个整合的、高优先级的待办事项列表。
 
+<a id="sec-5-1"></a>
+### 重症监护
+
+**目标：** 让**每一个类别**都达到至少**100张图片**的最低限度。少于这个数量，模型毫无机会。这是绝对首要、立即要完成的任务。
+
+**“危急”列表（2025-10-05 合并更新，图片数少于100的类别）：**
+
+*   **作物:**
+    *   `芡实(摩诃那)` (Fox_nut(Makhana)) (28) → **需要72张。**
+    *   `棉花` (cotton) (32) → **需要68张。**
+    *   `柠檬` (Lemon) (35) → **需要65张。**
+    *   `珍珠粟(bajra)` (Pearl_millet(bajra)) (39) → **需要61张。**
+    *   `卡姆果` (45) → **需要55张。**
+    *   `向日葵` (sunflower) (85) → **需要15张。**
+    *   `鹰嘴豆` (gram) (88) → **需要12张。**
+*   **疾病:**
+    *   `樱桃叶` (Cherry leaf) (46) → **需要54张。**
+    *   `甜椒叶` (Bell_pepper leaf) (67) → **需要33张。**
+    *   `葡萄叶黑腐病` (grape leaf black rot) (72) → **需要28张。**
+    *   `甜椒叶斑病` (Bell_pepper leaf spot) (89) → **需要11张。**
+    *   `番茄霉变叶` (Tomato mold leaf) (90) → **需要10张。**
+
+---
+
 -   `[ ]` **统计与可视化脚本**:
     -   `[ ]` 按类与来源输出详细计数的 CSV 报告。
     -   `[ ]` 尺寸/长宽比分布的可视化脚本。
@@ -621,10 +646,16 @@ python3 scripts/build_jsonl.py \
         -   统计: 扫描 1,519 条，成功还原 639 条；随后刷新清单至 8,600 条。
 
 -   **2025-10-05**:
-    -   **危急类别数据扩充**: 为解决模型训练数据严重不足的问题，针对 `docs/ChatGPT-VLM-MoE模型配置分析 (1).md` 中列出的17个“危急”类别，执行了紧急数据采集。
-    -   **爬虫执行**: 使用 `web_scraper/keywords_critical.txt` 作为关键词列表，运行 `agri_sites` 爬虫，从 GBIF 等数据源抓取了 539 张新图片。
-    -   **清洗**: 对 `web_scraper/scraped_images` 目录运行 `deduplicate_images.py` 脚本，移除了 4 张尺寸过小、911 张模糊和 233 张重复的图片。
-    -   **回收站挽救 再一次**: 使用 `.venv/bin/python scripts/deduplicate_images.py --roots web_scraper/scraped_images --blur-method both --blur-threshold 60 --tenengrad-threshold 700 --rescue-blur --skip-clean` 对 `.trash/` 中 `blur_*` 进行复核与还原。
+    -   **“重症监护”数据补充行动**:
+        -   **识别与记录**: 根据模型分析，在本文档 `5.1` 节中正式记录了图片数少于100的“危急”类别列表。
+        -   **关键词准备**: 创建 `web_scraper/keywords_critical.txt`，包含所有危急类别的英文名以供抓取。
+        -   **紧急数据采集**: 执行 `scrapy crawl agri_sites -a keywords_file=keywords_critical.txt` 命令，针对性地从 GBIF 和维基共享资源等高质量数据源抓取了约 3,500 张新图片。
+        -   **自动化清洗**: 抓取完成后，立即启动 `deduplicate_images.py` 脚本对 `web_scraper/scraped_images` 目录进行尺寸、模糊和重复图像的自动化清洗。该脚本正在后台运行。
+    -   **明日待办 (Next Steps)**:
+        1.  **人工复核**: 检查 `deduplicate_images.py` 脚本的输出，并人工审核 `web_scraper/scraped_images/.trash/` 目录，确认是否有被误删的图片，特别是模糊图片。
+        2.  **生成审核清单**: 运行 `scripts/generate_pest_review_manifest.py` 为所有清洗后的新图片创建网页审核清单。
+        3.  **网页端审核**: 打开 `docs/pest_manual_review.html`，对新图片进行快速的人工筛选，剔除不相关或质量差的样本。
+        4.  **最终入库**: 使用 `scripts/import_reviewed_pests.py` 将审核通过的图片正式并入 `datasets/` 主数据集。
 ---
 
 <a id="app-b"></a>

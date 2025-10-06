@@ -46,6 +46,7 @@
   {
     "name": "wikimedia_commons",
     "type": "commons",
+    "enabled": false,
     "base_url": "https://commons.wikimedia.org/w/api.php",
     "search": {
       "params": {
@@ -65,5 +66,32 @@
       "offset_param": "gsroffset"
     },
     "max_results_per_keyword": 60
+  },
+  {
+    "name": "insect_images",
+    "type": "html",
+    "enabled": false,
+    "base_url": "https://www.insectimages.org/",
+    "allowed_domains": [
+      "www.insectimages.org",
+      "bugwoodcloud.org"
+    ],
+    "search": {
+      "url": "https://www.insectimages.org/search/action.cfm?q={query}",
+      "listing_selector": "div.four-col",
+      "link_selector": "a::attr(href)",
+      "title_selector": "a::attr(title)",
+      "max_pages": 5
+    },
+    "detail": {
+      "gallery_selector": "#main-content",
+      "original_attr": "img.main-image::attr(src)",
+      "thumbnail_attr": "img.main-image::attr(src)",
+      "caption_attrs": [
+        "div.image-info h1::text",
+        "div.image-info p::text"
+      ]
+    },
+    "max_articles_per_keyword": 20
   }
 ]
