@@ -1,6 +1,6 @@
 # 农业多模态视觉数据集知识库
 
-本文档是项目核心知识库，旨在为数据集的构建、使用和未来发展提供一个清晰、连贯且全面的指南。它整合了项目的所有历史记录、处理流程、设计规范和战略规划。
+本文档是项目核心知识库，旨在为数据集的构建、使用和未来发展提供一个清晰、连贯且全面的指南。它整合了项目的所有历史记录、处理流程、设计规范和战略规划。请在执行后更新此文档。
 
 ## 目录
 
@@ -21,6 +21,7 @@
     - [3.5.1 XMDBD 集成摘要（LLM Tools）](#sec-3-5-1)
   - [3.6 生成数据索引 (JSONL)](#sec-3-6)
   - [3.7 验证与统计](#sec-3-7)
+  - [3.8 备用数据源：通用搜索引擎 API](#sec-3-8)
 - [4. 模型训练与评测路线图](#sec-4)
   - [4.1 视觉编码器选型](#sec-4-1)
   - [4.2 多模态架构选型](#sec-4-2)
@@ -379,6 +380,30 @@ datasets/
     -   随机抽取各类别样本进行人工目视检查，验证标签准确性。
     -   分析图像尺寸和长宽比的分布。
 
+<a id="sec-3-8"></a>
+### 3.8 备用数据源：通用搜索引擎 API
+
+-   **目的**: 当专业数据源（如 GBIF）对某些俗名或特定关键词返回结果不佳时，使用通用搜索引擎作为备用方案，快速获取大量候选图片。
+-   **策略**: 优先使用官方 API 而非直接抓取网页，以确保合规性和稳定性。
+-   **脚本**: `web_scraper/scraper/spiders/bing_api_spider.py`, `web_scraper/scraper/spiders/unsplash_api_spider.py`
+-   **核心功能**:
+    -   **合规的 API 调用**: 使用 Bing Image Search API v7 进行图片搜索。
+    -   **灵活的密钥管理**: 通过环境变量 `BING_SEARCH_API_KEY` 或命令行参数 `-a api_key=` 传入 API 密钥。
+    -   **参数化抓取**: 支持通过 `-a` 参数自定义关键词文件 (`keywords_file`) 和每个关键词的最大结果数 (`max_results`)。
+-   **示例命令**:
+    ```bash
+    # 1. 设置环境变量 (推荐)
+    export BING_SEARCH_API_KEY="在此处粘贴您的密钥"
+    
+    # 2. 在 web_scraper 目录下运行爬虫
+    cd web_scraper
+    ../.venv/bin/scrapy crawl bing_api -a keywords_file=your_keywords.txt -a max_results=200
+    
+    # 或者，直接通过命令行参数传入密钥
+    ../.venv/bin/scrapy crawl bing_api -a keywords_file=your_keywords.txt -a max_results=200 -a api_key="您的密钥"
+    ```
+-   **注意**: 使用 API 抓取的数据同样需要经过后续的**人工核验**和**数据清洗**流程。
+
 ---
 
 <a id="sec-4"></a>
@@ -424,26 +449,32 @@ datasets/
 这是一个整合的、高优先级的待办事项列表。
 
 <a id="sec-5-1"></a>
-### 重症监护
+### 数据健康度检查
 
-**目标：** 让**每一个类别**都达到至少**100张图片**的最低限度。少于这个数量，模型毫无机会。这是绝对首要、立即要完成的任务。
+**目标：** 确保每个类别都拥有足够数量的图像，以支持有效的模型训练。我们设定的最低标准是**每个类别至少100张图片**。
 
-**“危急”列表（2025-10-05 合并更新，图片数少于100的类别）：**
+**“危急”列表（2025-10-06, 仅统计 `datasets` 目录）：**
 
-*   **作物:**
-    *   `芡实(摩诃那)` (Fox_nut(Makhana)) (28) → **需要72张。**
-    *   `棉花` (cotton) (32) → **需要68张。**
-    *   `柠檬` (Lemon) (35) → **需要65张。**
-    *   `珍珠粟(bajra)` (Pearl_millet(bajra)) (39) → **需要61张。**
-    *   `卡姆果` (45) → **需要55张。**
-    *   `向日葵` (sunflower) (85) → **需要15张。**
-    *   `鹰嘴豆` (gram) (88) → **需要12张。**
-*   **疾病:**
-    *   `樱桃叶` (Cherry leaf) (46) → **需要54张。**
-    *   `甜椒叶` (Bell_pepper leaf) (67) → **需要33张。**
-    *   `葡萄叶黑腐病` (grape leaf black rot) (72) → **需要28张。**
-    *   `甜椒叶斑病` (Bell_pepper leaf spot) (89) → **需要11张。**
-    *   `番茄霉变叶` (Tomato mold leaf) (90) → **需要10张。**
+以下是在主数据集中图片数量仍少于100的类别。这表明它们需要优先进行数据补充。
+
+*   **作物 (Crops):**
+    *   `cardamom` (22)
+    *   `Fox_nut(Makhana)` (23)
+    *   `sunflower` (24)
+    *   `gram` (25)
+    *   `Lemon` (28)
+    *   `mustard-oil` (28)
+    *   `cotton` (32)
+    *   `Tobacco-plant` (33)
+    *   `Pearl_millet(bajra)` (39)
+*   **病害 (Diseases):**
+    *   `Sugarcane leaf` (36)
+    *   `Cherry leaf` (46)
+    *   `Bell_pepper leaf spot` (53)
+    *   `Bell_pepper leaf` (67)
+    *   `Tomato mold leaf` (70)
+    *   `grape leaf black rot` (72)
+    *   `Tomato Early blight leaf` (74)
 
 ---
 
@@ -611,6 +642,15 @@ python3 scripts/build_jsonl.py \
 
 <a id="app-a-2"></a>
 ### A.2 关键合并与处理日志
+
+-   **2025-10-06**:
+    -   **“重症监护”状态更新与数据补充策略调整**:
+        -   **状态盘点**: 运行 `scripts/count_images_by_class.py` 脚本，对 `datasets` 和 `web_scraper/scraped_images` 目录进行全面图像统计。
+        -   **识别新目标**: 根据统计结果，更新了 `5.1` 节中的“危急”类别列表，将目标缩减为 4 个图片总数仍低于 100 的类别。
+        -   **初次抓取尝试 (agri_sites)**: 使用 `agri_sites` 爬虫和新的关键词文件 `web_scraper/keywords_next_critical.txt` 进行抓取。发现专业数据源 GBIF 对俗名关键词返回了大量不相关结果，而其他配置的数据源（Wikimedia, InsectImages）则因 `robots.txt` 或 `403` 错误而无法访问。
+        -   **策略调整与合规化**: 鉴于直接抓取搜索引擎违反 `robots.txt` 规则，决定放弃该方式。转而创建了一个新的、合规的爬虫 `web_scraper/scraper/spiders/bing_api_spider.py`。
+        -   **创建 API 爬虫**: 新的 `bing_api` 爬虫使用 Bing Image Search API v7，通过官方渠道获取图片。它需要用户提供 API 密钥来运行。此举确保了数据采集的合规性和稳定性。
+        -   **后续步骤**: 待获取 API 密钥后，将使用新爬虫为“重症监护”类别补充数据。所有新获取的数据仍需经过人工审核流程。
 
 -   **2025-09-25**:
     -   **Crop Diseases 合并**: 使用 `scripts/merge_crop_diseases.py` 将本地 `Crop Diseases/` 数据集按病害类别合并到 `datasets/diseases/`，并重命名为 `<目标类>__cd__<uuid>.<ext>`。共拷贝 13,324 张图片。

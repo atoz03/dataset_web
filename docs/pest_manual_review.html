@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <title>害虫图像人工核验面板</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f5f5f5; }
     header { background: #1f2933; color: #fff; padding: 16px 24px; }
@@ -456,6 +457,14 @@
         appliedNote.textContent = '已应用最新移动操作。';
         analysisEl.appendChild(appliedNote);
       }
+
+      if (record.reclassify_error) {
+        const errorNote = document.createElement('div');
+        errorNote.className = 'analysis error';
+        errorNote.style.marginTop = '8px';
+        errorNote.innerHTML = `<div class="title">操作失败</div><div>${record.reclassify_error}</div>`;
+        analysisEl.appendChild(errorNote);
+      }
       card.appendChild(analysisEl);
     }
 
@@ -514,6 +523,10 @@
 
     async function reclassifyItem(item, targetClass, renameMode, customName) {
       pendingReclassify.add(item.id);
+      if (analysisCache[item.id]) {
+        delete analysisCache[item.id].reclassify_error;
+        delete analysisCache[item.id].applied;
+      }
       renderGallery();
       try {
         const response = await fetch(`${API_BASE}/reclassify`, {
@@ -543,10 +556,13 @@
         }
         populateKeywordOptions();
         renderGallery();
-        alert(`已移动：${item.id} → ${outcome.new_path}`);
+        // alert(`已移动：${item.id} → ${outcome.new_path}`); // Replaced with non-blocking feedback
       } catch (error) {
         const message = error?.message || '操作失败';
-        alert(`移动失败：${message}`);
+        if (analysisCache[item.id]) {
+          analysisCache[item.id].reclassify_error = message;
+        }
+        // alert(`移动失败：${message}`); // Replaced with non-blocking feedback
       } finally {
         pendingReclassify.delete(item.id);
         renderGallery();
