@@ -643,6 +643,38 @@ python3 scripts/build_jsonl.py \
 <a id="app-a-2"></a>
 ### A.2 关键合并与处理日志
 
+-   **2025-10-08**:
+    -   **数据集现状分析与JSONL更新**:
+        -   **全面统计**: 运行 `scripts/count_images_by_class.py` 对主数据集进行全面统计：
+            -   **Crops（作物）**: 151个类别，共40,323张图片
+            -   **Diseases（病害）**: 92个类别，共172,867张图片  
+            -   **Pests（害虫）**: 13个类别，共5,380张图片
+        -   **识别缺失类别**（<100张图片）:
+            -   **Crops类别需补充**: cardamom(22), Fox_nut(23), sunflower(24), gram(25), Lemon(28), mustard-oil(28), cotton(32), Tobacco-plant(33), Pearl_millet(39)
+            -   **Diseases类别需补充**: Sugarcane leaf(36), Cherry leaf(46), Bell_pepper leaf spot(53), Bell_pepper leaf(67), Tomato mold leaf(70), grape leaf black rot(72), Tomato Early blight leaf(74)
+            -   **Pests类别**: 所有类别均已超过100张，数据充足
+        -   **创建关键词文件**: 生成 `web_scraper/keywords_missing_categories.txt`，包含16个需要补充的类别关键词
+        -   **JSONL更新**: 基于当前数据集重新生成 `data.jsonl`，共1,206,180行（包含中英双语Caption和VQA样本）
+    -   **Unsplash API爬虫执行**:
+        -   **API密钥**: 使用Unsplash API密钥 (50次/小时限制)
+        -   **执行结果**: 成功获取3个类别共450张图片
+            -   Fox_nut(Makhana): 150张 (原23张 → 预计173张)
+            -   Pearl_millet(bajra): 150张 (原39张 → 预计189张)
+            -   grape leaf black rot: 150张 (原72张 → 预计222张)
+        -   **问题分析**: 其他13个关键词未获取到图片，可能原因：
+            1. Unsplash专注通用摄影，农业专业图片较少
+            2. 关键词需要优化以匹配Unsplash的内容
+        -   **经验总结**: 
+            - 创建了 `SCRAPING_RESULTS_20251008.md` 详细记录爬取结果
+            - Unsplash不适合专业农业图片采集
+            - 建议使用Bing API或其他专业数据源
+        -   **后续步骤**: 
+            1. 对爬取的450张图片进行人工审核（使用 `docs/pest_manual_review.html`）
+            2. 通过 `scripts/deduplicate_images.py` 进行清洗
+            3. 使用 `scripts/import_reviewed_pests.py` 导入审核通过的图片
+            4. 重新运行 `scripts/build_jsonl.py` 更新数据索引
+            5. 考虑使用Bing API补充其他缺失类别
+
 -   **2025-10-06**:
     -   **“重症监护”状态更新与数据补充策略调整**:
         -   **状态盘点**: 运行 `scripts/count_images_by_class.py` 脚本，对 `datasets` 和 `web_scraper/scraped_images` 目录进行全面图像统计。

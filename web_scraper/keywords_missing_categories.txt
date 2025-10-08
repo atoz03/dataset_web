@@ -1,0 +1,17 @@
+# Priority 1: Most critical (< 50 images) - 16 keywords total
+cardamom plant
+fox nut makhana
+sunflower plant
+gram chickpea
+lemon tree
+mustard plant
+cotton plant
+tobacco plant
+pearl millet bajra
+sugarcane leaf disease
+cherry leaf disease
+bell pepper leaf spot
+bell pepper leaf disease
+tomato leaf mold
+grape leaf black rot
+tomato early blight
