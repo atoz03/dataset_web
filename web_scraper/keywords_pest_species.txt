@@ -1,0 +1,188 @@
+# Comprehensive Pest Species Keywords for Agricultural Dataset
+# Optimized for general image APIs (Pixabay, Pexels, Unsplash)
+# Format: category | detailed search terms
+
+# === Existing Categories (need more images) ===
+
+# Ants (current: 385)
+red fire ants agriculture pest
+carpenter ants wood damage
+leaf cutter ants agriculture
+black garden ants pest control
+
+# Beetles (current: 416)
+colorado potato beetle pest
+japanese beetle crop damage
+flea beetle leaf damage
+cucumber beetle pest agriculture
+corn rootworm beetle
+
+# Caterpillars (current: 434)
+armyworm caterpillar pest
+cabbage worm caterpillar
+tomato hornworm caterpillar
+cutworm caterpillar agriculture
+corn earworm caterpillar
+
+# Earwigs (current: 466)
+european earwig pest
+earwig insect damage plants
+earwig garden pest control
+
+# Grasshoppers (current: 485)
+locust swarm agriculture pest
+grasshopper crop damage
+migratory locust pest
+desert locust agriculture
+
+# Moths (current: 497)
+codling moth apple pest
+gypsy moth tree pest
+corn borer moth pest
+diamondback moth cabbage
+army worm moth agriculture
+
+# Slugs (current: 391)
+garden slug pest control
+slug crop damage agriculture
+slug lettuce pest
+slug seedling damage
+
+# Snails (current: 500)
+garden snail pest agriculture
+apple snail rice pest
+snail crop damage control
+
+# Wasps (current: 498)
+parasitic wasp agriculture pest
+yellow jacket wasp pest
+hornet nest agriculture
+
+# Weevils (current: 485)
+boll weevil cotton pest
+rice weevil grain pest
+granary weevil agriculture
+black vine weevil pest
+
+# Bees (current: 500) - already full but good category
+honey bee pollinator agriculture
+
+# Earthworms (current: 323) - beneficial but need more
+earthworm soil agriculture
+composting worms agriculture
+
+# === NEW Pest Categories (high priority) ===
+
+# Aphids (major agricultural pest - NEW)
+aphid infestation plant pest
+green aphid crop damage
+black bean aphid agriculture
+cotton aphid pest control
+melon aphid pest damage
+aphid colony plant leaves
+
+# Spider Mites (major pest - NEW)
+spider mite leaf damage
+two spotted spider mite pest
+red spider mite agriculture
+mite infestation plant damage
+
+# Whiteflies (major pest - NEW)
+whitefly pest greenhouse
+tobacco whitefly crop pest
+silverleaf whitefly damage
+whitefly infestation plants
+
+# Thrips (major pest - NEW)
+thrips insect pest agriculture
+onion thrips crop damage
+western flower thrips pest
+thrips leaf damage plant
+
+# Scale Insects (major pest - NEW)
+scale insects plant pest
+armored scale pest agriculture
+soft scale insect damage
+mealybug scale pest
+
+# Leafhoppers (major pest - NEW)
+leafhopper insect pest
+potato leafhopper damage
+grape leafhopper pest
+leafhopper vector disease
+
+# Termites (agriculture/structure pest - NEW)
+termite crop damage
+subterranean termite agriculture
+termite pest control farm
+
+# Fruit Flies (major pest - NEW)
+fruit fly pest agriculture
+mediterranean fruit fly pest
+oriental fruit fly damage
+fruit fly infestation crop
+
+# Cutworms (major pest - NEW)
+cutworm larvae pest agriculture
+black cutworm crop damage
+cutworm cutting seedlings
+
+# Wireworms (soil pest - NEW)
+wireworm beetle larvae pest
+wireworm crop damage soil
+click beetle larvae agriculture
+
+# Nematodes (microscopic pest - NEW)
+root knot nematode pest
+nematode plant disease
+nematode crop damage agriculture
+
+# Stink Bugs (major pest - NEW)
+stink bug crop pest
+brown marmorated stink bug
+green stink bug agriculture
+stink bug fruit damage
+
+# Sawflies (defoliating pest - NEW)
+sawfly larvae pest plant
+pine sawfly forest pest
+wheat stem sawfly agriculture
+
+# Borers (stem/trunk pests - NEW)
+corn borer pest damage
+european corn borer agriculture
+stem borer rice pest
+trunk borer tree pest
+
+# Crickets (occasional pest - NEW)
+field cricket agriculture pest
+mole cricket lawn pest
+cricket crop damage
+
+# Cicadas (periodic pest - NEW)
+cicada pest agriculture
+periodical cicada damage
+cicada nymph plant damage
+
+# Bollworms (cotton pest - NEW)
+pink bollworm cotton pest
+cotton bollworm agriculture
+bollworm larvae crop damage
+
+# Locusts (major swarm pest - NEW)
+desert locust swarm pest
+migratory locust agriculture
+locust plague crop devastation
+locust nymph hopper band
+
+# Leaf Miners (tunneling pest - NEW)
+leaf miner insect pest
+serpentine leaf miner damage
+tomato leaf miner agriculture
+leaf miner trail damage
+
+# Grubs (soil dwelling larvae - NEW)
+white grub pest lawn
+japanese beetle grub damage
+grub larvae soil pest
+scarab beetle grub agriculture

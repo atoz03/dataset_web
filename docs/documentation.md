@@ -387,9 +387,39 @@ datasets/
 -   **策略**: 优先使用官方免费API，确保合规性和稳定性。
 
 #### 3.8.1 已废弃的API
--   **Bing Image Search API v7**: ❌ 已于2025年8月11日被微软官方废弃，不再可用。
+-   **Bing Image Search API v7**: ❌ 已于2025年8月11日被微软官方废弃，不再可用。相关爬虫代码已删除。
 
-#### 3.8.2 推荐的免费API（2024年10月验证）
+#### 3.8.2 当前使用的数据源（2025年12月更新）
+
+**主力数据源**: GBIF/iNaturalist (`agri_sites` 爬虫)
+- 专业生物学数据库，图片质量高且有科学分类
+- 特别适合害虫、植物病害等专业类别
+- 支持学名搜索，准确度高
+- 已配置keyword_overrides映射通用名到学名
+
+**补充数据源**: Unsplash API
+- 图片质量高，适合通用农业场景
+- 限制：50次/小时，需要优化关键词
+- 适用于作物、通用场景等非专业类别
+
+**使用方法**:
+```bash
+# 主力：GBIF/iNaturalist
+cd web_scraper
+../.venv/bin/scrapy crawl agri_sites \
+    -a keywords_file=keywords_pest_species.txt \
+    -a max_api_results=150
+
+# 补充：Unsplash
+export UNSPLASH_API_KEY="your-api-key"
+../.venv/bin/scrapy crawl unsplash_api \
+    -a keywords_file=keywords_missing_priority.txt \
+    -a max_pages=5 -a per_page=30
+```
+
+详见 `API_VERIFICATION_SUMMARY.md` 和 `SCRAPING_RESULTS_20251209.md`。
+
+#### 3.8.3 备选免费API（未采用，仅供参考）
 
 ##### 选项1: Pixabay API ⭐ 强烈推荐
 -   **优势**: 
@@ -680,6 +710,24 @@ python3 scripts/build_jsonl.py \
 
 <a id="app-a-2"></a>
 ### A.2 关键合并与处理日志
+
+-   **2025-10-09**:
+    -   **大规模图片抓取完成** (详见 `SCRAPING_RESULTS_20251209.md`):
+        -   **策略**: 删除所有Bing相关爬虫，采用 GBIF/iNaturalist (`agri_sites`) + Unsplash API 组合
+        -   **抓取成果**: 新增约 **13,000+** 张高质量农业图片
+            - **害虫类别**: 所有原有类别达到500+张，新增20+个细分物种（蚜虫、螨虫、粉虱、蓟马、介壳虫、叶蝉、果蝇、夜蛾、蝽类等）
+            - **作物类别**: 9个缺失类别全部超标（sunflower: 568, cotton: 446, gram: 520, lemon: 342等）
+            - **病害类别**: 7个缺失类别全部超标（Bell_pepper leaf spot: 691, Cherry leaf: 531等）
+        -   **新增关键词文件**:
+            - `keywords_pest_species.txt`: 综合害虫关键词（通用描述+细分类别）
+            - `keywords_new_pests.txt`: 新增害虫学名列表（科学分类准确性高）
+            - `keywords_missing_priority.txt`: 高优先级缺失类别（作物+病害+新害虫）
+        -   **代码清理**: 删除 bing_images_spider.py, bing_api_spider.py, pixabay_api_spider.py
+        -   **文档更新**: 
+            - 更新 `API_VERIFICATION_SUMMARY.md` 删除Bing/Pixabay/Pexels内容
+            - 更新 `docs/documentation.md` 第3.8节数据源说明
+            - 创建 `SCRAPING_RESULTS_20251209.md` 详细报告
+        -   **待处理**: 需执行去重→人工审核→导入主数据集→重新生成JSONL
 
 -   **2025-10-08**:
     -   **API可用性验证与方案更新**:

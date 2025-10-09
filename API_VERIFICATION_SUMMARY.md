@@ -3,16 +3,16 @@
 ## 🔍 核心问题与结论
 
 - **问题**: `docs/documentation.md` 中推荐的 Bing Image Search API 已被官方废弃，无法用于为数据集补充图片。
-- **结论**: 必须寻找并实施替代方案。经验证，**Pixabay** 和 **Pexels** 的免费API是目前最可行的选择。
-- **行动**: 立即开发针对这两个API的新爬虫，并更新文档。
+- **结论**: 使用现有的农业专业数据源（GBIF/iNaturalist）作为主力，Unsplash API作为补充。
+- **行动**: ✅ 已删除Bing相关爬虫代码，采用`agri_sites`爬虫（GBIF）+ Unsplash API组合策略。
 
 ---
 
-## ❌ Bing API 状态确认
+## ❌ Bing API 状态确认（已废弃）
 
 - **官方废弃日期**: 2025年8月11日
-- **官方声明**: 微软已正式停止 Bing Search API v7 服务，并推荐用户迁移至不适合我们用例的 Azure AI Agents。
-- **结论**: **完全不可用**。项目文档和相关脚本中任何依赖 Bing API 的部分都已过时，必须移除或替换。
+- **官方声明**: 微软已正式停止 Bing Search API v7 服务。
+- **结论**: **已删除所有Bing相关代码**（bing_images_spider.py, bing_api_spider.py）。
 
 ---
 
@@ -77,17 +77,20 @@
 
 ---
 
-## 📊 推荐实施策略
+## 📊 当前实施策略（2025年更新）
 
 ### 优先级与组合策略
 
-最佳方案是按以下顺序组合使用API，最大化覆盖率和效率：
+**GBIF/iNaturalist (主力) → Unsplash API (补充) → Wikimedia Commons (备用)**
 
-**Pixabay (主力) → Pexels (高质量补充) → Unsplash (备用)**
-
-1.  **首先使用 Pixabay**: 因其高限额和海量资源，作为第一轮数据采集的主力。
-2.  **其次使用 Pexels**: 针对在 Pixabay 上结果不佳的关键词，利用其高质量图片进行补充。
-3.  **最后使用 Unsplash**: 仅在需要极高质量的通用图片时作为最后选择。
+1.  **首选 GBIF/iNaturalist** (`agri_sites` 爬虫): 专业的生物学数据库，图片质量高且有科学分类。
+    - 特别适合害虫、植物病害等专业类别
+    - 支持学名搜索，准确度高
+    - 已配置keyword_overrides映射通用名到学名
+2.  **补充 Unsplash API**: 针对作物、通用场景等非专业类别。
+    - 图片质量高，适合通用农业场景
+    - 限制：50次/小时，需要优化关键词
+3.  **备用 Wikimedia Commons**: 开放的图片资源库（当前已禁用）。
 
 ### 关键词优化策略
 
@@ -102,164 +105,33 @@
 
 ---
 
-## 🔧 技术实施：Scrapy 爬虫
+## 🔧 当前技术实施方案
 
-### 步骤1: 注册API密钥
-
-- **Pixabay**: 访问 `https://pixabay.com/api/docs/`，注册并获取密钥。
-- **Pexels**: 访问 `https://www.pexels.com/api/`，注册并获取密钥。
-
-### 步骤2: 创建 Pixabay 爬虫
-
-创建文件 `web_scraper/scraper/spiders/pixabay_api_spider.py`:
-
-```python
-# web_scraper/scraper/spiders/pixabay_api_spider.py
-import scrapy
-import os
-import json
-from urllib.parse import urlencode
-
-class PixabayApiSpider(scrapy.Spider):
-    name = 'pixabay_api'
-    
-    def __init__(self, keywords_file=None, max_results=50, api_key=None, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.api_key = api_key or os.environ.get('PIXABAY_API_KEY')
-        
-        if not self.api_key:
-            self.logger.error("Pixabay API key not found. Set PIXABAY_API_KEY env var or use -a api_key=...")
-            return
-        
-        self.base_url = 'https://pixabay.com/api/'
-        self.max_results = int(max_results)
-        self.keywords = self._load_keywords(keywords_file or 'keywords_missing_categories.txt')
-    
-    def _load_keywords(self, keywords_file):
-        # 实现加载关键词的逻辑 (可参考 unsplash_api_spider.py)
-        try:
-            with open(keywords_file, 'r') as f:
-                return [line.strip() for line in f if line.strip() and not line.startswith('#')]
-        except FileNotFoundError:
-            self.logger.error(f"Keywords file not found: {keywords_file}")
-            return []
-    
-    def start_requests(self):
-        for keyword in self.keywords:
-            params = {
-                'key': self.api_key,
-                'q': keyword,
-                'image_type': 'photo',
-                'per_page': min(self.max_results, 200),  # Pixabay每页最大200
-                'safesearch': 'true'
-            }
-            url = f"{self.base_url}?{urlencode(params)}"
-            yield scrapy.Request(url, callback=self.parse, meta={'keyword': keyword})
-    
-    def parse(self, response):
-        keyword = response.meta['keyword']
-        data = json.loads(response.text)
-        
-        if not data.get('hits'):
-            self.logger.warning(f"No results found for keyword: {keyword}")
-        
-        for hit in data.get('hits', []):
-            yield {
-                'image_urls': [hit['largeImageURL']],
-                'category': keyword,
-                'source_site': 'pixabay.com_api',
-                'image_id': hit['id'],
-                'photographer': hit['user'],
-                'page_url': hit['pageURL']
-            }
-```
-
-### 步骤3: 创建 Pexels 爬虫
-
-创建文件 `web_scraper/scraper/spiders/pexels_api_spider.py`:
-
-```python
-# web_scraper/scraper/spiders/pexels_api_spider.py
-import scrapy
-import os
-import json
-from urllib.parse import urlencode
-
-class PexelsApiSpider(scrapy.Spider):
-    name = 'pexels_api'
-    
-    def __init__(self, keywords_file=None, max_results=50, api_key=None, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.api_key = api_key or os.environ.get('PEXELS_API_KEY')
-        
-        if not self.api_key:
-            self.logger.error("Pexels API key not found. Set PEXELS_API_KEY env var or use -a api_key=...")
-            return
-        
-        self.base_url = 'https://api.pexels.com/v1/search'
-        self.max_results = int(max_results)
-        self.keywords = self._load_keywords(keywords_file or 'keywords_missing_categories.txt')
-
-    def _load_keywords(self, keywords_file):
-        # 实现加载关键词的逻辑 (可参考 unsplash_api_spider.py)
-        try:
-            with open(keywords_file, 'r') as f:
-                return [line.strip() for line in f if line.strip() and not line.startswith('#')]
-        except FileNotFoundError:
-            self.logger.error(f"Keywords file not found: {keywords_file}")
-            return []
-
-    def start_requests(self):
-        for keyword in self.keywords:
-            params = {
-                'query': keyword,
-                'per_page': min(self.max_results, 80)  # Pexels每页最大80
-            }
-            headers = {'Authorization': self.api_key}
-            url = f"{self.base_url}?{urlencode(params)}"
-            yield scrapy.Request(url, headers=headers, callback=self.parse, 
-                                meta={'keyword': keyword})
-    
-    def parse(self, response):
-        keyword = response.meta['keyword']
-        data = json.loads(response.text)
-
-        if not data.get('photos'):
-            self.logger.warning(f"No results found for keyword: {keyword}")
-
-        for photo in data.get('photos', []):
-            yield {
-                'image_urls': [photo['src']['large']],
-                'category': keyword,
-                'source_site': 'pexels.com_api',
-                'image_id': photo['id'],
-                'photographer': photo['photographer'],
-                'page_url': photo['url']
-            }
-```
-
-### 步骤4: 运行爬虫
+### 步骤1: 使用 agri_sites 爬虫（主力）
 
 ```bash
-# 1. 将API密钥设置为环境变量 (推荐)
-export PIXABAY_API_KEY="your-pixabay-api-key"
-export PEXELS_API_KEY="your-pexels-api-key"
-
-# 2. 切换到 web_scraper 目录
+# 使用GBIF/iNaturalist获取专业农业图片
 cd web_scraper
-
-# 3. 运行Pixabay爬虫
-../.venv/bin/scrapy crawl pixabay_api \
-    -a keywords_file=keywords_missing_categories.txt \
-    -a max_results=100
-
-# 4. 运行Pexels爬虫 (作为补充)
-../.venv/bin/scrapy crawl pexels_api \
-    -a keywords_file=keywords_missing_categories.txt \
-    -a max_results=80
+../.venv/bin/scrapy crawl agri_sites \
+    -a keywords_file=keywords_pest_species.txt \
+    -a max_api_results=150
 ```
 
-### 步骤5: 后续处理
+### 步骤2: 使用 Unsplash API（补充）
+
+```bash
+# 设置API密钥
+export UNSPLASH_API_KEY="your-unsplash-api-key"
+
+# 运行Unsplash爬虫
+cd web_scraper
+../.venv/bin/scrapy crawl unsplash_api \
+    -a keywords_file=keywords_missing_priority.txt \
+    -a max_pages=5 \
+    -a per_page=30
+```
+
+### 步骤3: 后续处理
 
 抓取到的图片将保存在 `web_scraper/scraped_images/` 目录下，之后需遵循标准数据处理流程：
 1.  **清洗去重**: `scripts/deduplicate_images.py`

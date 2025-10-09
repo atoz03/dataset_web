@@ -1,0 +1,31 @@
+# High priority missing categories for Unsplash API
+# Crops with <40 images
+cardamom spice green pods plant
+fox nut makhana seeds aquatic plant
+sunflower field agriculture
+gram chickpea legume plant
+lemon tree citrus fruit
+mustard field yellow flowers agriculture
+cotton plant white bolls agriculture
+tobacco plant nicotiana leaves
+pearl millet bajra cereal grain
+
+# Diseases with <80 images  
+sugarcane leaf disease red stripe
+cherry tree leaf disease spot
+bell pepper capsicum leaf spot disease
+bell pepper capsicum leaf healthy disease
+tomato plant leaf mold fungus disease
+grape vine leaf black rot disease spots
+tomato plant early blight leaf disease
+
+# New pest species (high value)
+aphid green insect pest plant
+spider mite red pest agriculture
+whitefly insect greenhouse pest
+thrips insect tiny pest agriculture
+scale insect mealybug pest
+leafhopper insect green pest
+fruit fly pest agriculture damage
+stink bug agriculture crop pest
+locust swarm desert agriculture

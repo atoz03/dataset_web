@@ -1,0 +1,85 @@
+# New high-value pest categories for agriculture dataset
+# Optimized for GBIF/iNaturalist scientific names
+
+# Major agricultural pests - aphids
+Aphididae
+Aphis gossypii
+Myzus persicae
+Aphis fabae
+
+# Spider mites
+Tetranychidae
+Tetranychus urticae
+
+# Whiteflies
+Aleyrodidae
+Bemisia tabaci
+
+# Thrips
+Thripidae
+Frankliniella occidentalis
+
+# Scale insects and mealybugs
+Diaspididae
+Pseudococcidae
+Planococcus citri
+
+# Leafhoppers
+Cicadellidae
+Empoasca fabae
+
+# Fruit flies
+Tephritidae
+Ceratitis capitata
+Bactrocera dorsalis
+
+# Cutworms and armyworms
+Agrotis ipsilon
+Spodoptera litura
+Spodoptera exigua
+
+# Stink bugs
+Pentatomidae
+Halyomorpha halys
+Nezara viridula
+
+# Wireworms
+Elateridae larvae
+
+# Root weevils
+Otiorhynchus sulcatus
+
+# Corn borers
+Ostrinia nubilalis
+
+# Bollworms
+Helicoverpa armigera
+Pectinophora gossypiella
+
+# Leaf miners
+Liriomyza sativae
+Liriomyza trifolii
+
+# More beetle pests
+Diabrotica undecimpunctata
+Leptinotarsa decemlineata
+Anthonomus grandis
+
+# Sawflies
+Tenthredinidae
+
+# Crickets
+Gryllidae
+Acheta domesticus
+
+# Termites
+Reticulitermes flavipes
+
+# Additional caterpillar pests
+Pieris rapae
+Plutella xylostella
+Helicoverpa zea
+
+# Locusts
+Schistocerca gregaria
+Locusta migratoria
