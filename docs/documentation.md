@@ -381,28 +381,66 @@ datasets/
     -   分析图像尺寸和长宽比的分布。
 
 <a id="sec-3-8"></a>
-### 3.8 备用数据源：通用搜索引擎 API
+### 3.8 备用数据源：通用图片搜索 API
 
--   **目的**: 当专业数据源（如 GBIF）对某些俗名或特定关键词返回结果不佳时，使用通用搜索引擎作为备用方案，快速获取大量候选图片。
--   **策略**: 优先使用官方 API 而非直接抓取网页，以确保合规性和稳定性。
--   **脚本**: `web_scraper/scraper/spiders/bing_api_spider.py`, `web_scraper/scraper/spiders/unsplash_api_spider.py`
--   **核心功能**:
-    -   **合规的 API 调用**: 使用 Bing Image Search API v7 进行图片搜索。
-    -   **灵活的密钥管理**: 通过环境变量 `BING_SEARCH_API_KEY` 或命令行参数 `-a api_key=` 传入 API 密钥。
-    -   **参数化抓取**: 支持通过 `-a` 参数自定义关键词文件 (`keywords_file`) 和每个关键词的最大结果数 (`max_results`)。
+-   **目的**: 当专业数据源（如 GBIF）对某些俗名或特定关键词返回结果不佳时，使用通用图片搜索API作为备用方案，快速获取大量候选图片。
+-   **策略**: 优先使用官方免费API，确保合规性和稳定性。
+
+#### 3.8.1 已废弃的API
+-   **Bing Image Search API v7**: ❌ 已于2025年8月11日被微软官方废弃，不再可用。
+
+#### 3.8.2 推荐的免费API（2024年10月验证）
+
+##### 选项1: Pixabay API ⭐ 强烈推荐
+-   **优势**: 
+    -   5.4M+ 免费图片和视频
+    -   无限制或100次/分钟（根据不同文档）
+    -   完全免费，可商用
+    -   RESTful API，JSON响应
+-   **限制**: 通用图片为主，专业农业术语可能较少
+-   **API密钥**: https://pixabay.com/api/docs/
 -   **示例命令**:
     ```bash
-    # 1. 设置环境变量 (推荐)
-    export BING_SEARCH_API_KEY="在此处粘贴您的密钥"
+    # 设置环境变量
+    export PIXABAY_API_KEY="your-api-key"
     
-    # 2. 在 web_scraper 目录下运行爬虫
+    # 运行爬虫（待实现）
     cd web_scraper
-    ../.venv/bin/scrapy crawl bing_api -a keywords_file=your_keywords.txt -a max_results=200
-    
-    # 或者，直接通过命令行参数传入密钥
-    ../.venv/bin/scrapy crawl bing_api -a keywords_file=your_keywords.txt -a max_results=200 -a api_key="您的密钥"
+    ../.venv/bin/scrapy crawl pixabay_api -a keywords_file=your_keywords.txt -a max_results=50
     ```
--   **注意**: 使用 API 抓取的数据同样需要经过后续的**人工核验**和**数据清洗**流程。
+
+##### 选项2: Pexels API ⭐ 推荐
+-   **优势**:
+    -   高质量专业摄影作品
+    -   基础tier: 200次/小时，20,000次/月
+    -   可申请无限使用（需提供attribution并说明用途）
+    -   符合开源/研究项目要求
+-   **申请无限额度**: 发邮件至 api@pexels.com
+-   **API密钥**: https://www.pexels.com/api/
+-   **示例命令**:
+    ```bash
+    # 设置环境变量
+    export PEXELS_API_KEY="your-api-key"
+    
+    # 运行爬虫（待实现）
+    cd web_scraper
+    ../.venv/bin/scrapy crawl pexels_api -a keywords_file=your_keywords.txt -a max_results=50
+    ```
+
+##### 选项3: Unsplash API
+-   **优势**: 高质量图片，已有爬虫实现
+-   **限制**: 50次/小时，农业专业图片较少
+-   **脚本**: `web_scraper/scraper/spiders/unsplash_api_spider.py`
+-   **结论**: 适合通用场景，但不适合农业专业术语
+
+#### 3.8.3 实施建议
+-   **推荐策略**: Pixabay (主) + Pexels (辅) 组合使用
+-   **关键词优化**: 使用更通用的英文术语而非专业术语
+    -   ❌ `cardamom plant` → ✅ `cardamom spice green pods plant`
+-   **预期覆盖率**: 30-50%的缺失类别可找到合适图片
+-   **详细分析**: 参见 `API_ALTERNATIVES_2024.md`
+
+-   **注意**: 使用任何API抓取的数据都需要经过后续的**人工核验**和**数据清洗**流程。
 
 ---
 
@@ -644,6 +682,19 @@ python3 scripts/build_jsonl.py \
 ### A.2 关键合并与处理日志
 
 -   **2025-10-08**:
+    -   **API可用性验证与方案更新**:
+        -   **Bing API验证**: 确认Bing Image Search API v7已于2025年8月11日被微软官方废弃，完全不可用
+        -   **替代方案研究**: 通过Web搜索验证了多个免费API的可用性
+        -   **推荐方案**:
+            1. **Pixabay API** (强烈推荐): 5.4M+图片，免费无限或100次/分钟，完全可用
+            2. **Pexels API** (推荐): 200次/小时基础tier，可申请无限，适合开源项目
+            3. **Unsplash API** (备用): 已验证但限额较低(50次/小时)，不适合批量采集
+        -   **文档创建**:
+            - `API_ALTERNATIVES_2024.md`: 详细的API对比分析和实施建议
+            - `QUICK_START_PIXABAY_PEXELS.md`: 快速开始指南，包含爬虫骨架代码
+            - `API_VERIFICATION_SUMMARY.md`: 完整的验证结果总结
+        -   **文档更新**: 第3.8节完全重写，标注Bing API废弃，添加Pixabay和Pexels方案
+        -   **实施建议**: 使用Pixabay(主)+Pexels(辅)组合策略，关键词需优化为描述性术语
     -   **数据集现状分析与JSONL更新**:
         -   **全面统计**: 运行 `scripts/count_images_by_class.py` 对主数据集进行全面统计：
             -   **Crops（作物）**: 151个类别，共40,323张图片
