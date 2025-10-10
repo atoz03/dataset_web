@@ -1,4 +1,4 @@
-# 农业多模态视觉数据集项目
+# 农业多模态视觉数据集
 
 <p align="center">
   <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License">
@@ -9,173 +9,409 @@
   </a>
 </p>
 
-本项目旨在构建一个高质量、大规模、多模态的农业视觉知识库，而不仅仅是一个简单的图像分类数据集。我们致力于将每一张图片转化为包含丰富上下文信息的“**图像-文本对 + 标签**”样本，以支持更高级的视觉语言模型训练。
+## 项目概述
 
-完整的项目设计、数据本体、处理历史和未来规划，请参阅我们的核心知识库：[`docs/documentation.md`](docs/documentation.md)。
+本项目构建了一个**高质量、大规模、多模态**的农业视觉知识库，为视觉语言模型（VLM）训练提供结构化数据支持。区别于传统图像分类数据集，每个样本均包含：
 
----
+- **图像**: 经过质量筛选和去重的高分辨率农业图像
+- **多模态标注**: 中英双语描述（Caption）+ 问答对（VQA）
+- **结构化标签**: 标准化的作物、病害、害虫分类体系
+- **完整溯源**: 通过文件名追溯数据来源
 
-## 核心理念
-
-为保证数据集的质量和一致性，所有工作都遵循以下核心原则：
-
-1.  **统一的多模态标注**: 每张图片都配有中英双语的描述（Caption）和问答对（VQA），以支持多模态训练。
-2.  **统一的本体 (Ontology)**: 所有“作物”、“病害”等标签都经过规范化，确保跨数据源的一致性。详细类目表见知识库附录。
-3.  **数据质量优先**: 通过严格的去重、模糊检测和尺寸过滤，剔除低质量样本。
-4.  **完全可追溯**: 通过文件名中的来源标签，每一张图片都能追溯到其原始出处。
+📖 **完整文档**: [`docs/documentation.md`](docs/documentation.md) | **API指南**: [`API_VERIFICATION_SUMMARY.md`](API_VERIFICATION_SUMMARY.md) | **抓取报告**: [`SCRAPING_SUMMARY.md`](SCRAPING_SUMMARY.md)
 
 ---
 
-## 环境准备
+## 核心特性
 
-首先，请安装项目所需的 Python 依赖包：
+### 1. 统一的本体标准（Ontology）
+- ✅ 跨数据源的标准化分类体系
+- ✅ 中英双语映射和学名支持
+- ✅ 详见知识库附录完整类目表
+
+### 2. 严格的质量控制
+- ✅ 多维度去重（感知哈希 + 平均哈希）
+- ✅ 模糊检测（Laplacian + Tenengrad算法）
+- ✅ 尺寸过滤（最小224×224像素）
+- ✅ 可选的LLM语义验证
+
+### 3. 完整的数据溯源
+- ✅ 标准化文件命名：`<类别>__<来源>__<uuid>.<ext>`
+- ✅ 每张图片可追溯到原始数据源
+
+### 4. 自动化处理流程
+- ✅ 一键式数据合并、清洗、标注
+- ✅ 并发LLM增强（可选）
+- ✅ 人工审核Web界面
+
+---
+
+## 快速开始
+
+### 1. 环境配置
 
 ```bash
+# 安装依赖
 pip install -r requirements.txt
+
+# 配置LLM API（可选，用于语义验证）
+cat > .env << EOF
+VLM_API_KEY=sk-your-api-key-here
+VLM_API_BASE=https://xmdbd.online/v1
+VLM_MODEL=gemini-2.5-flash
+VLM_WORKERS=8
+EOF
+
+# 载入环境变量
+export $(grep -v '^#' .env | xargs)
 ```
 
-可选：将运行配置写入 `.env`（已被 `.gitignore` 忽略，避免密钥泄露）：
-
-```bash
-echo "VLM_API_KEY=sk-your-api-key-here" >> .env
-echo "VLM_API_BASE=https://xxx" >> .env
-echo "VLM_MODEL=gemini-2.5-flash" >> .env
-```
-然后 `export $(grep -v '^#' .env | xargs)` 载入。
-
----
-
-## 数据集架构
-
-项目采用统一的分类目录结构，所有图像数据均存放在 `datasets/` 目录下：
+### 2. 数据集结构
 
 ```
 datasets/
-├── crops/      # 农作物图像
-├── pests/      # 农业害虫图像
-└── diseases/   # 植物病害图像
+├── crops/         # 作物图像（140+类别）
+├── pests/         # 害虫图像（13+类别）
+└── diseases/      # 病害图像（50+类别）
 ```
 
-### 文件命名规范
+**文件命名规范**: `<类别>__<来源>__<uuid>.<ext>`
+- `<类别>`: 标准化英文类别名（小写，空格用下划线替代）
+- `<来源>`: 数据源标识（如 `pd`=PlantDoc, `web`=网络爬虫）
+- `<uuid>`: 唯一标识符
 
-所有数据集中的文件均遵循统一的命名格式（全部小写），以便于解析和溯源：
-
-`<类别名>__<来源标签>__<uuid>.<ext>`
-
--   **`<类别名>`**: 标准化的英文类别名，例如 `corn rust leaf`。
--   **`<来源标签>`**: 数据来源标识，例如 `__pd__` 代表 PlantDoc。
--   **`<uuid>`**: 唯一的ID。
+**示例**: `corn_rust_leaf__pd__a3f2e1b9.jpg`
 
 ---
 
-## 标准化工作流
+## 标准化处理流程
 
-我们推荐遵循以下标准化流程来处理和整合数据：
+### 阶段 1: 数据采集与合并
 
-### 第 1 步：合并新数据源
+#### 1.1 本地数据集合并
 
-采用“拷贝而非移动”的策略，使用 `scripts/merge_*.py` 脚本将新的数据源合并到 `datasets/` 目录中。
-
--   [`scripts/merge_crop_diseases.py`](scripts/merge_crop_diseases.py): 合并本地 `Crop Diseases` 数据集。
--   [`scripts/merge_140_crops.py`](scripts/merge_140_crops.py): 合并 `140-most-popular-crops` 数据集。
--   [`scripts/merge_kaggle_disease.py`](scripts/merge_kaggle_disease.py): 合并从 Kaggle 下载的病害数据集。
-
-### 第 2 步：标准化文件名
-
-对新合入的、文件名不规范的数据进行统一重命名。此脚本可安全重复运行。
+将已有数据集合并到标准目录结构：
 
 ```bash
-python3 scripts/bulk_rename_by_class.py --root <目标目录> --tag <来源标签>
+# 合并 Crop Diseases 数据集
+python3 scripts/merge_crop_diseases.py
+
+# 合并 140 Crops 数据集
+python3 scripts/merge_140_crops.py
+
+# 合并 Kaggle 病害数据集
+python3 scripts/merge_kaggle_disease.py
 ```
-*示例*:
+
+#### 1.2 网络爬虫采集
+
+**推荐数据源** (按优先级):
+1. **GBIF/iNaturalist**: 专业生物学数据库（主力）
+2. **Unsplash API**: 高质量通用图片（补充）
+3. **Wikimedia Commons**: 开放图片库（备用）
+
 ```bash
-python3 scripts/bulk_rename_by_class.py --root datasets/diseases --tag pd
+# 使用 GBIF/iNaturalist 爬虫
+cd web_scraper
+../.venv/bin/scrapy crawl agri_sites \
+    -a keywords_file=keywords_pest_species.txt \
+    -a max_api_results=150
+
+# 使用 Unsplash API 补充
+export UNSPLASH_API_KEY="your-api-key"
+../.venv/bin/scrapy crawl unsplash_api \
+    -a keywords_file=keywords_missing_priority.txt \
+    -a max_pages=5 -a per_page=30
 ```
 
-### 第 3 步：数据清洗
+> 📋 详细的API配置和使用指南请参阅 [`API_VERIFICATION_SUMMARY.md`](API_VERIFICATION_SUMMARY.md)
 
-移除低质量（尺寸过小、模糊）和重复的图像。强烈建议首次运行时使用 `--action move` 进行安全操作，检查 `.trash/` 目录后再决定是否永久删除。
+### 阶段 2: 数据标准化
+
+#### 2.1 文件名标准化
+
+对不规范的文件名进行统一重命名（可安全重复运行）：
+
+```bash
+python3 scripts/bulk_rename_by_class.py \
+    --root datasets/diseases \
+    --tag pd
+```
+
+#### 2.2 统计当前数据量
+
+```bash
+python3 scripts/count_images_by_class.py \
+    --roots datasets/diseases datasets/crops datasets/pests
+```
+
+### 阶段 3: 质量控制
+
+#### 3.1 去重与质量过滤
+
+**首次运行建议使用 `--action move`** 以便检查被移除的文件：
 
 ```bash
 python3 scripts/deduplicate_images.py \
     --roots datasets/diseases datasets/crops datasets/pests \
     --min-width 224 --min-height 224 \
+    --blur-method both \
     --blur-threshold 60 \
+    --tenengrad-threshold 700 \
+    --ham-threshold 3 \
+    --near-scope class \
     --action move
 ```
 
-### 第 3.4 步：人工核验（网页）
+**参数说明**:
+- `--min-width/height`: 最小尺寸要求
+- `--blur-method`: 模糊检测算法（`laplacian`|`tenengrad`|`both`）
+- `--blur-threshold`: Laplacian方差阈值（<60视为模糊）
+- `--tenengrad-threshold`: Tenengrad梯度阈值（<700视为模糊）
+- `--ham-threshold`: 汉明距离阈值（<=3视为重复）
+- `--near-scope`: 去重范围（`all`|`category`|`class`）
+- `--action`: 处理方式（`move`|`delete`|`dry-run`）
 
-对于爬虫抓取等来源不纯的数据，在并入主数据集前，可通过网页进行快速的人工抽查与核验。
-
-- **启动审核服务**: `python3 scripts/pest_review_server.py --root web_scraper/scraped_images`
-- **访问页面**: 在浏览器中打开 `docs/pest_manual_review.html`。
-- **导入结果**: 审核完成后，使用 `scripts/import_reviewed_pests.py` 将接受的图片并入主数据集。
-
-详情请参阅知识库 [`3.4 人工核验（网页）`](docs/documentation.md:207) 章节。
-
-### 第 3.5 步：LLM 语义验证与描述增强（可选，推荐）
-
-利用多模态大模型（VLM）对图像进行语义一致性校验与描述增强（详情见 `llm_tools/README.md`）。
+检查 `.trash/` 目录后，确认无误可永久删除：
 
 ```bash
-# 干跑：仅日志，不改动文件（服务端证书未完善时建议加 --insecure）
-python3 llm_tools/verify_and_describe.py \
-  --root datasets/diseases \
-  --action dry-run \
-  --insecure
-
-# 实际运行：接受的图片旁生成 <image>.json 描述，拒绝项移动到 .rejected_by_llm/
-python3 llm_tools/verify_and_describe.py \
-  --root datasets/diseases \
-  --model gemini-2.5-flash \
-  --insecure
+rm -rf datasets/*/.trash
 ```
 
-提示：当前服务端证书链未完善时需使用 `--insecure` 或设置 `VLM_VERIFY_SSL=false`；修复后移除该选项以恢复 TLS 校验。
+#### 3.2 人工审核（Web界面）
 
-### 第 4 步：生成数据索引 (JSONL)
+针对爬虫数据进行快速人工审核：
 
-为清洗干净的数据集生成包含多模态标注的 `JSONL` 索引文件。该脚本会自动生成 Caption 和 VQA 样本，并划分训练/验证/测试集。
+```bash
+# 启动审核服务器
+python3 scripts/pest_review_server.py \
+    --root web_scraper/scraped_images
+
+# 在浏览器中打开
+open docs/pest_manual_review.html
+```
+
+审核完成后导出JSON文件，然后导入到正式数据集：
+
+```bash
+python3 scripts/import_reviewed_pests.py \
+    --review-json path/to/review.json \
+    --tag web
+```
+
+#### 3.3 LLM语义验证（可选，推荐）
+
+使用多模态大模型进行语义一致性验证和描述增强：
+
+```bash
+# 干跑模式（仅日志）
+python3 llm_tools/verify_and_describe.py \
+    --root datasets/diseases \
+    --action dry-run \
+    --workers 8 \
+    --insecure
+
+# 实际运行（生成 .json 描述文件）
+python3 llm_tools/verify_and_describe.py \
+    --root datasets/diseases \
+    --model gemini-2.5-flash \
+    --workers 8 \
+    --insecure
+```
+
+**注意**: 
+- 不匹配的图片会被移至 `.rejected_by_llm/` 目录
+- 通过验证的图片旁生成同名 `.json` 描述文件
+- 当前服务端证书未完善时需加 `--insecure` 参数
+- 详细配置请参阅 [`llm_tools/README.md`](llm_tools/README.md)
+
+### 阶段 4: 生成数据索引
+
+生成包含多模态标注的JSONL格式索引文件：
 
 ```bash
 python3 scripts/build_jsonl.py \
     --roots datasets/diseases datasets/crops datasets/pests \
-    --out data.sample.jsonl \
+    --out data.jsonl \
     --train 0.8 --val 0.1 --test 0.1 \
     --seed 42
 ```
 
 ---
 
-## 数据索引 (`JSONL` 格式)
+## 数据索引格式
 
-所有图像的元数据和文本标注都存储在 `JSONL` 文件中，每一行代表一个样本。其核心字段包括：
+生成的 `data.jsonl` 文件每行为一个JSON对象，包含以下字段：
 
--   `image`: 图像的相对路径。
--   `task`: 任务类型 (`caption` 或 `vqa`)。
--   `text`: 任务文本（图像描述或问题）。
--   `answer`: `vqa` 任务的答案。
--   `split`: 数据集划分 (`train`, `val`, `test`)。
--   `labels`: 包含类别、作物、病害、来源等详细信息的对象。
+```json
+{
+  "image": "datasets/diseases/corn_rust_leaf__pd__a3f2e1b9.jpg",
+  "task": "caption",
+  "text": "这是一张玉米锈病叶片的照片。This is a photo of corn rust leaf.",
+  "split": "train",
+  "labels": {
+    "category": "diseases",
+    "crop": "corn",
+    "disease": "rust",
+    "source": "pd",
+    "class": "corn rust leaf"
+  }
+}
+```
 
-一个 [`data.sample.jsonl`](data.sample.jsonl) 文件已包含在仓库中，可供查阅。
+**任务类型**:
+- `caption`: 图像描述任务（中英双语）
+- `vqa`: 视觉问答任务（包含 `answer` 字段）
+
+**数据集划分**:
+- `train`: 训练集（默认80%）
+- `val`: 验证集（默认10%）
+- `test`: 测试集（默认10%）
+
+示例文件: [`data.sample.jsonl`](data.sample.jsonl)
 
 ---
 
-## LLM 配置速览
+## 脚本工具参考
 
-- 环境变量（可用 CLI 覆盖）：
-  - `VLM_API_KEY`（必填）：VLM 服务的 API Key。
-  - `VLM_API_BASE`：默认 `https://xxx`。
-  - `VLM_MODEL`：默认 `gemini-2.5-flash`。
-  - `VLM_TIMEOUT`：默认 `120` 秒。
-  - `VLM_VERIFY_SSL`：`true|false`（默认为 `true`）。
-- CLI 常用参数：`--api-key`、`--api-base`、`--model`、`--timeout`、`--insecure`、`--action`、`--no-metadata`。
-- 日志说明与示例命令：参见 `llm_tools/README.md` 的“日志（Logs）”章节。
+### 数据合并
+| 脚本 | 功能 | 用法 |
+|------|------|------|
+| `merge_crop_diseases.py` | 合并Crop Diseases数据集 | `python3 scripts/merge_crop_diseases.py` |
+| `merge_140_crops.py` | 合并140 Crops数据集 | `python3 scripts/merge_140_crops.py` |
+| `merge_kaggle_disease.py` | 合并Kaggle病害数据集 | `python3 scripts/merge_kaggle_disease.py` |
+
+### 数据处理
+| 脚本 | 功能 | 用法 |
+|------|------|------|
+| `bulk_rename_by_class.py` | 批量规范化文件名 | `--root <目录> --tag <来源>` |
+| `deduplicate_images.py` | 去重与质量过滤 | `--roots <目录列表> --action <动作>` |
+| `count_images_by_class.py` | 统计各类别图片数量 | `--roots <目录列表>` |
+
+### 审核工具
+| 脚本 | 功能 | 用法 |
+|------|------|------|
+| `pest_review_server.py` | 启动审核服务器 | `--root <目录> [--port 8765]` |
+| `generate_pest_review_manifest.py` | 生成审核清单 | `--root <目录> --out <输出>` |
+| `import_reviewed_pests.py` | 导入审核通过的数据 | `--review-json <文件> --tag <来源>` |
+
+### 索引生成
+| 脚本 | 功能 | 用法 |
+|------|------|------|
+| `build_jsonl.py` | 生成JSONL索引 | `--roots <目录列表> --out <输出>` |
+
+### LLM增强
+| 脚本 | 功能 | 用法 |
+|------|------|------|
+| `verify_and_describe.py` | LLM语义验证与描述增强 | `--root <目录> --workers <并发数>` |
+
+> 📖 所有脚本均支持 `--help` 参数查看详细用法
+
+---
+
+## 项目结构
+
+```
+dataset_web/
+├── datasets/                 # 数据集主目录
+│   ├── crops/               # 作物图像
+│   ├── pests/               # 害虫图像
+│   └── diseases/            # 病害图像
+├── scripts/                 # 数据处理脚本
+│   ├── merge_*.py          # 数据合并脚本
+│   ├── deduplicate_images.py
+│   ├── bulk_rename_by_class.py
+│   ├── build_jsonl.py
+│   └── ...
+├── llm_tools/              # LLM增强工具
+│   ├── verify_and_describe.py
+│   └── README.md
+├── web_scraper/            # 网络爬虫
+│   ├── spiders/           # Scrapy爬虫
+│   └── scraped_images/    # 爬取的图片
+├── docs/                   # 项目文档
+│   ├── documentation.md   # 核心知识库
+│   └── pest_manual_review.html
+├── mappings/              # 类别映射表
+├── data.jsonl            # 完整数据索引
+├── data.sample.jsonl     # 示例数据
+└── requirements.txt      # Python依赖
+```
+
+---
+
+## 数据源说明
+
+### 已集成数据源
+- **PlantDoc** (`pd`): 植物病害专业数据集
+- **Kaggle Datasets** (`kaggle`): 多个Kaggle农业数据集
+- **140 Crops** (`140crops`): 作物分类数据集
+- **GBIF/iNaturalist** (`web`): 网络爬虫采集
+- **Unsplash** (`web`): 高质量图片补充
+
+### 数据质量统计（截至2025-10-08）
+详见 [`DATASET_STATUS_20251008.md`](DATASET_STATUS_20251008.md)
+
+---
+
+## 常见问题
+
+### Q1: 如何添加新的数据源？
+
+1. 将数据复制到临时目录
+2. 使用 `bulk_rename_by_class.py` 规范化文件名（指定新的 `--tag`）
+3. 运行 `deduplicate_images.py` 去重
+4. 可选：运行 LLM 语义验证
+5. 运行 `build_jsonl.py` 更新索引
+
+### Q2: 如何处理LLM拒绝的图片？
+
+LLM拒绝的图片会被移至 `.rejected_by_llm/` 目录，建议：
+1. 人工复审该目录
+2. 确认误判的图片移回原位
+3. 确认正确拒绝的图片可永久删除
+
+### Q3: 如何自定义Caption模板？
+
+编辑 `scripts/build_jsonl.py` 中的 `make_caption_samples()` 和 `make_vqa_samples()` 函数。
+
+如果存在 `.json` 元数据文件（由LLM生成），会优先使用其中的描述。
+
+### Q4: 爬虫采集的图片质量如何保证？
+
+建议采用以下流程：
+1. 使用专业数据源（GBIF/iNaturalist）而非通用搜索引擎
+2. 运行 `deduplicate_images.py` 进行质量过滤
+3. 使用Web界面进行人工抽查审核
+4. 可选：运行LLM语义验证
+
+### Q5: 如何配置并发数和超时？
+
+LLM工具支持以下环境变量：
+```bash
+export VLM_WORKERS=8          # 并发线程数
+export VLM_TIMEOUT=120        # API超时（秒）
+export VLM_VERIFY_SSL=false   # 禁用SSL验证
+```
 
 ---
 
 ## 许可证
 
-本项目采用 MIT 许可证。详情请参阅 [`LICENSE`](LICENSE) 文件。
+本项目采用 [MIT License](LICENSE)。
+
+**注意**: 请确保遵守各数据源的原始许可证条款。本项目仅用于学术研究目的。
+
+---
+
+## 相关文档
+
+- 📖 [完整项目文档](docs/documentation.md) - 设计理念、本体定义、处理历史
+- 🔧 [API验证报告](API_VERIFICATION_SUMMARY.md) - 数据源API可用性分析
+- 📊 [抓取工作总结](SCRAPING_SUMMARY.md) - 网络爬虫采集成果报告
+- 🤖 [LLM工具指南](llm_tools/README.md) - 语义验证与描述增强详解
+- 📈 [数据集状态](DATASET_STATUS_20251008.md) - 当前数据量统计
+
+---
+
+**最后更新**: 2025-10-10 | **维护者**: ECCV Dataset Team
