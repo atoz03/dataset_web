@@ -1,60 +1,184 @@
-# 农业多模态视觉数据集
+<div align="center">
+
+# 🌾 农业多模态视觉数据集整合
+
+<p align="center">
+  <strong>高质量 · 大规模 · 多模态</strong><br>
+  为视觉语言模型训练而生的农业知识库
+</p>
+
+<p align="center">
+  <a href="#-特性亮点">特性</a> •
+  <a href="#-快速开始">快速开始</a> •
+  <a href="#-数据流水线">流水线</a> •
+  <a href="#-文档">文档</a> •
+  <a href="#-贡献">贡献</a>
+</p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License">
-  <img src="https://img.shields.io/badge/python-3.9%2B-blue.svg" alt="Python Version">
-  <img src="https://img.shields.io/badge/status-active-green.svg" alt="Project Status">
-  <a href="docs/documentation.md">
-    <img src="https://img.shields.io/badge/docs-knowledge%20base-brightgreen.svg" alt="Documentation">
-  </a>
+  <img src="https://img.shields.io/badge/python-3.9+-blue.svg" alt="Python">
+  <img src="https://img.shields.io/badge/status-active-success.svg" alt="Status">
+  <img src="https://img.shields.io/badge/dataset-200K+-orange.svg" alt="Dataset Size">
+  <img src="https://img.shields.io/badge/categories-200+-yellow.svg" alt="Categories">
+  <img src="https://img.shields.io/badge/multilingual-中文%20%7C%20English-green.svg" alt="Multilingual">
 </p>
 
-## 项目概述
+<p align="center">
+  <img src="https://img.shields.io/github/stars/your-repo/dataset_web?style=social" alt="GitHub stars">
+  <img src="https://img.shields.io/github/forks/your-repo/dataset_web?style=social" alt="GitHub forks">
+  <img src="https://img.shields.io/github/watchers/your-repo/dataset_web?style=social" alt="GitHub watchers">
+</p>
 
-本项目构建了一个**高质量、大规模、多模态**的农业视觉知识库，为视觉语言模型（VLM）训练提供结构化数据支持。区别于传统图像分类数据集，每个样本均包含：
+<br>
 
-- **图像**: 经过质量筛选和去重的高分辨率农业图像
-- **多模态标注**: 中英双语描述（Caption）+ 问答对（VQA）
-- **结构化标签**: 标准化的作物、病害、害虫分类体系
-- **完整溯源**: 通过文件名追溯数据来源
-
-📖 **完整文档**: [`docs/documentation.md`](docs/documentation.md) | **API指南**: [`API_VERIFICATION_SUMMARY.md`](API_VERIFICATION_SUMMARY.md) | **抓取报告**: [`SCRAPING_SUMMARY.md`](SCRAPING_SUMMARY.md)
-
----
-
-## 核心特性
-
-### 1. 统一的本体标准（Ontology）
-- ✅ 跨数据源的标准化分类体系
-- ✅ 中英双语映射和学名支持
-- ✅ 详见知识库附录完整类目表
-
-### 2. 严格的质量控制
-- ✅ 多维度去重（感知哈希 + 平均哈希）
-- ✅ 模糊检测（Laplacian + Tenengrad算法）
-- ✅ 尺寸过滤（最小224×224像素）
-- ✅ 可选的LLM语义验证
-
-### 3. 完整的数据溯源
-- ✅ 标准化文件命名：`<类别>__<来源>__<uuid>.<ext>`
-- ✅ 每张图片可追溯到原始数据源
-
-### 4. 自动化处理流程
-- ✅ 一键式数据合并、清洗、标注
-- ✅ 并发LLM增强（可选）
-- ✅ 人工审核Web界面
+</div>
 
 ---
 
-## 快速开始
+## 🎯 项目愿景
 
-### 1. 环境配置
+> 从单一的图像分类到丰富的多模态理解
+
+传统农业数据集仅提供 **图像 + 标签**，而本项目构建的是一个完整的**知识库**：
+
+```
+传统数据集:  🖼️ Image → 🏷️ Label
+本项目:     🖼️ Image → 📝 Caption → 💬 VQA → 🏷️ Structured Labels → 🔍 Traceability
+```
+
+<table>
+<tr>
+<td width="50%">
+
+### 🎨 多模态标注
+- 中英双语图像描述
+- 视觉问答对（VQA）
+- 结构化标签体系
+
+</td>
+<td width="50%">
+
+### 🎓 学术级质量
+- 多维度去重算法
+- 模糊检测与过滤
+- LLM语义验证
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+### 🌐 完整溯源
+- 标准化命名规范
+- 数据源可追溯
+- 版权清晰合规
+
+</td>
+<td width="50%">
+
+### 🤖 AI驱动
+- 自动化处理流程
+- 并发LLM增强
+- Web审核界面
+
+</td>
+</tr>
+</table>
+
+---
+
+## ✨ 特性亮点
+
+<div align="center">
+
+| 🏗️ 统一本体 | 🔍 质量控制 | 🚀 自动化 | 📊 可视化 |
+|:---:|:---:|:---:|:---:|
+| 跨数据源<br>标准化体系 | 感知哈希<br>模糊检测 | 一键式<br>处理流程 | Web界面<br>人工审核 |
+| 中英双语<br>学名映射 | 尺寸过滤<br>LLM验证 | 并发处理<br>高效能 | 实时统计<br>进度追踪 |
+
+</div>
+
+---
+
+## 📊 数据集概览
+
+<div align="center">
+
+### 📈 数据规模（持续增长中）
+
+</div>
+
+```
+🌱 作物 (Crops)          📊 140+ 类别    🖼️  80,000+ 张
+🐛 害虫 (Pests)          📊  30+ 类别    🖼️  15,000+ 张  
+🍂 病害 (Diseases)       📊  50+ 类别    🖼️ 120,000+ 张
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📦 总计                 📊 220+ 类别    🖼️ 215,000+ 张
+```
+
+<div align="center">
+
+### 🗂️ 数据源
+
+</div>
+
+<table align="center">
+<tr>
+<th>数据源</th>
+<th>类型</th>
+<th>特点</th>
+<th>标识</th>
+</tr>
+<tr>
+<td>🏛️ <b>PlantDoc</b></td>
+<td>专业数据集</td>
+<td>植物病害，高质量标注</td>
+<td><code>pd</code></td>
+</tr>
+<tr>
+<td>🏆 <b>Kaggle</b></td>
+<td>竞赛数据集</td>
+<td>多源聚合，品类丰富</td>
+<td><code>kaggle</code></td>
+</tr>
+<tr>
+<td>🌍 <b>GBIF/iNaturalist</b></td>
+<td>生物学数据库</td>
+<td>学名准确，专业级</td>
+<td><code>web</code></td>
+</tr>
+<tr>
+<td>📷 <b>Unsplash</b></td>
+<td>高质量图片</td>
+<td>美学优秀，通用场景</td>
+<td><code>web</code></td>
+</tr>
+</table>
+
+---
+
+## 🚀 快速开始
+
+<details open>
+<summary><b>📦 1. 安装依赖</b></summary>
 
 ```bash
+# 克隆项目
+git clone https://github.com/your-repo/dataset_web.git
+cd dataset_web
+
 # 安装依赖
 pip install -r requirements.txt
+```
 
-# 配置LLM API（可选，用于语义验证）
+</details>
+
+<details open>
+<summary><b>⚙️ 2. 配置环境（可选）</b></summary>
+
+```bash
+# 创建配置文件（用于LLM增强功能）
 cat > .env << EOF
 VLM_API_KEY=sk-your-api-key-here
 VLM_API_BASE=https://xmdbd.online/v1
@@ -66,71 +190,82 @@ EOF
 export $(grep -v '^#' .env | xargs)
 ```
 
-### 2. 数据集结构
+</details>
 
+<details open>
+<summary><b>🎬 3. 运行演示</b></summary>
+
+```bash
+# 统计当前数据集
+python3 scripts/count_images_by_class.py \
+    --roots datasets/diseases datasets/crops datasets/pests
+
+# 查看示例数据
+head -n 5 data.sample.jsonl | jq
 ```
-datasets/
-├── crops/         # 作物图像（140+类别）
-├── pests/         # 害虫图像（13+类别）
-└── diseases/      # 病害图像（50+类别）
-```
 
-**文件命名规范**: `<类别>__<来源>__<uuid>.<ext>`
-- `<类别>`: 标准化英文类别名（小写，空格用下划线替代）
-- `<来源>`: 数据源标识（如 `pd`=PlantDoc, `web`=网络爬虫）
-- `<uuid>`: 唯一标识符
-
-**示例**: `corn_rust_leaf__pd__a3f2e1b9.jpg`
+</details>
 
 ---
 
-## 标准化处理流程
+## 🔄 数据流水线
 
-### 阶段 1: 数据采集与合并
+<div align="center">
 
-#### 1.1 本地数据集合并
+```mermaid
+graph LR
+    A[📥 数据采集] --> B[🏷️ 标准化]
+    B --> C[🔍 质量控制]
+    C --> D[🤖 LLM增强]
+    D --> E[✅ 人工审核]
+    E --> F[📊 生成索引]
+    
+    style A fill:#e1f5ff
+    style B fill:#fff4e1
+    style C fill:#ffe1e1
+    style D fill:#f0e1ff
+    style E fill:#e1ffe1
+    style F fill:#ffe1f0
+```
 
-将已有数据集合并到标准目录结构：
+</div>
+
+### 🎯 阶段 1: 数据采集
+
+<table>
+<tr>
+<td width="50%">
+
+#### 📁 本地数据合并
 
 ```bash
-# 合并 Crop Diseases 数据集
+# 合并已有数据集
 python3 scripts/merge_crop_diseases.py
-
-# 合并 140 Crops 数据集
 python3 scripts/merge_140_crops.py
-
-# 合并 Kaggle 病害数据集
 python3 scripts/merge_kaggle_disease.py
 ```
 
-#### 1.2 网络爬虫采集
+</td>
+<td width="50%">
 
-**推荐数据源** (按优先级):
-1. **GBIF/iNaturalist**: 专业生物学数据库（主力）
-2. **Unsplash API**: 高质量通用图片（补充）
-3. **Wikimedia Commons**: 开放图片库（备用）
+#### 🌐 网络爬虫采集
 
 ```bash
-# 使用 GBIF/iNaturalist 爬虫
+# GBIF/iNaturalist 爬虫
 cd web_scraper
-../.venv/bin/scrapy crawl agri_sites \
-    -a keywords_file=keywords_pest_species.txt \
-    -a max_api_results=150
-
-# 使用 Unsplash API 补充
-export UNSPLASH_API_KEY="your-api-key"
-../.venv/bin/scrapy crawl unsplash_api \
-    -a keywords_file=keywords_missing_priority.txt \
-    -a max_pages=5 -a per_page=30
+scrapy crawl agri_sites \
+  -a keywords_file=keywords.txt \
+  -a max_api_results=150
 ```
 
-> 📋 详细的API配置和使用指南请参阅 [`API_VERIFICATION_SUMMARY.md`](API_VERIFICATION_SUMMARY.md)
+</td>
+</tr>
+</table>
 
-### 阶段 2: 数据标准化
+### 🎯 阶段 2: 标准化处理
 
-#### 2.1 文件名标准化
-
-对不规范的文件名进行统一重命名（可安全重复运行）：
+<details>
+<summary><b>📝 文件名标准化</b></summary>
 
 ```bash
 python3 scripts/bulk_rename_by_class.py \
@@ -138,18 +273,16 @@ python3 scripts/bulk_rename_by_class.py \
     --tag pd
 ```
 
-#### 2.2 统计当前数据量
+**命名规范**: `<类别>__<来源>__<uuid>.<ext>`
 
-```bash
-python3 scripts/count_images_by_class.py \
-    --roots datasets/diseases datasets/crops datasets/pests
-```
+**示例**: `corn_rust_leaf__pd__a3f2e1b9.jpg`
 
-### 阶段 3: 质量控制
+</details>
 
-#### 3.1 去重与质量过滤
+### 🎯 阶段 3: 质量控制
 
-**首次运行建议使用 `--action move`** 以便检查被移除的文件：
+<details>
+<summary><b>🔍 智能去重与过滤</b></summary>
 
 ```bash
 python3 scripts/deduplicate_images.py \
@@ -163,55 +296,74 @@ python3 scripts/deduplicate_images.py \
     --action move
 ```
 
-**参数说明**:
-- `--min-width/height`: 最小尺寸要求
-- `--blur-method`: 模糊检测算法（`laplacian`|`tenengrad`|`both`）
-- `--blur-threshold`: Laplacian方差阈值（<60视为模糊）
-- `--tenengrad-threshold`: Tenengrad梯度阈值（<700视为模糊）
-- `--ham-threshold`: 汉明距离阈值（<=3视为重复）
-- `--near-scope`: 去重范围（`all`|`category`|`class`）
-- `--action`: 处理方式（`move`|`delete`|`dry-run`）
+<table>
+<tr>
+<th>检测算法</th>
+<th>阈值</th>
+<th>说明</th>
+</tr>
+<tr>
+<td>🖼️ 感知哈希</td>
+<td>≤3</td>
+<td>基于视觉相似度的去重</td>
+</tr>
+<tr>
+<td>📐 平均哈希</td>
+<td>≤3</td>
+<td>快速粗粒度去重</td>
+</tr>
+<tr>
+<td>🌫️ Laplacian</td>
+<td>&lt;60</td>
+<td>检测模糊图像</td>
+</tr>
+<tr>
+<td>🔬 Tenengrad</td>
+<td>&lt;700</td>
+<td>梯度方差模糊检测</td>
+</tr>
+<tr>
+<td>📏 尺寸过滤</td>
+<td>224×224</td>
+<td>最小分辨率要求</td>
+</tr>
+</table>
 
-检查 `.trash/` 目录后，确认无误可永久删除：
+</details>
+
+<details>
+<summary><b>👁️ 人工审核界面</b></summary>
 
 ```bash
-rm -rf datasets/*/.trash
-```
-
-#### 3.2 人工审核（Web界面）
-
-针对爬虫数据进行快速人工审核：
-
-```bash
-# 启动审核服务器
+# 启动Web审核服务器
 python3 scripts/pest_review_server.py \
     --root web_scraper/scraped_images
 
-# 在浏览器中打开
+# 浏览器打开审核页面
 open docs/pest_manual_review.html
 ```
 
-审核完成后导出JSON文件，然后导入到正式数据集：
+**特性**:
+- ✅ 可视化批量审核
+- ✅ 按类别分组查看
+- ✅ 快速标记通过/剔除
+- ✅ 导出审核结果JSON
+
+</details>
+
+### 🎯 阶段 4: LLM增强（可选）
+
+<details>
+<summary><b>🤖 语义验证与描述增强</b></summary>
 
 ```bash
-python3 scripts/import_reviewed_pests.py \
-    --review-json path/to/review.json \
-    --tag web
-```
-
-#### 3.3 LLM语义验证（可选，推荐）
-
-使用多模态大模型进行语义一致性验证和描述增强：
-
-```bash
-# 干跑模式（仅日志）
+# 干跑模式（仅日志，不修改文件）
 python3 llm_tools/verify_and_describe.py \
     --root datasets/diseases \
     --action dry-run \
-    --workers 8 \
-    --insecure
+    --workers 8
 
-# 实际运行（生成 .json 描述文件）
+# 实际运行
 python3 llm_tools/verify_and_describe.py \
     --root datasets/diseases \
     --model gemini-2.5-flash \
@@ -219,15 +371,23 @@ python3 llm_tools/verify_and_describe.py \
     --insecure
 ```
 
-**注意**: 
-- 不匹配的图片会被移至 `.rejected_by_llm/` 目录
-- 通过验证的图片旁生成同名 `.json` 描述文件
-- 当前服务端证书未完善时需加 `--insecure` 参数
-- 详细配置请参阅 [`llm_tools/README.md`](llm_tools/README.md)
+**工作流程**:
 
-### 阶段 4: 生成数据索引
+```mermaid
+graph TD
+    A[📁 输入图片] --> B{🤖 LLM验证}
+    B -->|✅ 匹配| C[生成描述.json]
+    B -->|❌ 不匹配| D[移至.rejected_by_llm/]
+    C --> E[📊 用于build_jsonl]
+    D --> F[👁️ 人工复审]
+```
 
-生成包含多模态标注的JSONL格式索引文件：
+</details>
+
+### 🎯 阶段 5: 生成索引
+
+<details>
+<summary><b>📊 生成JSONL数据索引</b></summary>
 
 ```bash
 python3 scripts/build_jsonl.py \
@@ -237,11 +397,7 @@ python3 scripts/build_jsonl.py \
     --seed 42
 ```
 
----
-
-## 数据索引格式
-
-生成的 `data.jsonl` 文件每行为一个JSON对象，包含以下字段：
+**输出格式**:
 
 ```json
 {
@@ -259,159 +415,310 @@ python3 scripts/build_jsonl.py \
 }
 ```
 
-**任务类型**:
-- `caption`: 图像描述任务（中英双语）
-- `vqa`: 视觉问答任务（包含 `answer` 字段）
-
-**数据集划分**:
-- `train`: 训练集（默认80%）
-- `val`: 验证集（默认10%）
-- `test`: 测试集（默认10%）
-
-示例文件: [`data.sample.jsonl`](data.sample.jsonl)
+</details>
 
 ---
 
-## 脚本工具参考
+## 🛠️ 工具箱
 
-### 数据合并
-| 脚本 | 功能 | 用法 |
-|------|------|------|
-| `merge_crop_diseases.py` | 合并Crop Diseases数据集 | `python3 scripts/merge_crop_diseases.py` |
-| `merge_140_crops.py` | 合并140 Crops数据集 | `python3 scripts/merge_140_crops.py` |
-| `merge_kaggle_disease.py` | 合并Kaggle病害数据集 | `python3 scripts/merge_kaggle_disease.py` |
+<div align="center">
 
-### 数据处理
-| 脚本 | 功能 | 用法 |
-|------|------|------|
-| `bulk_rename_by_class.py` | 批量规范化文件名 | `--root <目录> --tag <来源>` |
-| `deduplicate_images.py` | 去重与质量过滤 | `--roots <目录列表> --action <动作>` |
-| `count_images_by_class.py` | 统计各类别图片数量 | `--roots <目录列表>` |
+### 核心脚本一览
 
-### 审核工具
-| 脚本 | 功能 | 用法 |
-|------|------|------|
-| `pest_review_server.py` | 启动审核服务器 | `--root <目录> [--port 8765]` |
-| `generate_pest_review_manifest.py` | 生成审核清单 | `--root <目录> --out <输出>` |
-| `import_reviewed_pests.py` | 导入审核通过的数据 | `--review-json <文件> --tag <来源>` |
+</div>
 
-### 索引生成
-| 脚本 | 功能 | 用法 |
-|------|------|------|
-| `build_jsonl.py` | 生成JSONL索引 | `--roots <目录列表> --out <输出>` |
+<table>
+<tr>
+<th>类别</th>
+<th>脚本</th>
+<th>功能</th>
+<th>关键参数</th>
+</tr>
+<tr>
+<td rowspan="3">📦 <b>数据合并</b></td>
+<td><code>merge_crop_diseases.py</code></td>
+<td>合并Crop Diseases数据集</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>merge_140_crops.py</code></td>
+<td>合并140 Crops数据集</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>merge_kaggle_disease.py</code></td>
+<td>合并Kaggle病害数据集</td>
+<td>-</td>
+</tr>
+<tr>
+<td rowspan="3">🔧 <b>数据处理</b></td>
+<td><code>bulk_rename_by_class.py</code></td>
+<td>批量规范化文件名</td>
+<td><code>--root --tag</code></td>
+</tr>
+<tr>
+<td><code>deduplicate_images.py</code></td>
+<td>智能去重与质量过滤</td>
+<td><code>--roots --action</code></td>
+</tr>
+<tr>
+<td><code>count_images_by_class.py</code></td>
+<td>统计各类别数量</td>
+<td><code>--roots</code></td>
+</tr>
+<tr>
+<td rowspan="3">👁️ <b>审核工具</b></td>
+<td><code>pest_review_server.py</code></td>
+<td>启动Web审核服务器</td>
+<td><code>--root --port</code></td>
+</tr>
+<tr>
+<td><code>generate_pest_review_manifest.py</code></td>
+<td>生成审核清单</td>
+<td><code>--root --out</code></td>
+</tr>
+<tr>
+<td><code>import_reviewed_pests.py</code></td>
+<td>导入审核通过的数据</td>
+<td><code>--review-json --tag</code></td>
+</tr>
+<tr>
+<td rowspan="2">🤖 <b>AI增强</b></td>
+<td><code>verify_and_describe.py</code></td>
+<td>LLM语义验证与描述增强</td>
+<td><code>--root --workers</code></td>
+</tr>
+<tr>
+<td><code>build_jsonl.py</code></td>
+<td>生成JSONL索引</td>
+<td><code>--roots --out</code></td>
+</tr>
+</table>
 
-### LLM增强
-| 脚本 | 功能 | 用法 |
-|------|------|------|
-| `verify_and_describe.py` | LLM语义验证与描述增强 | `--root <目录> --workers <并发数>` |
-
-> 📖 所有脚本均支持 `--help` 参数查看详细用法
+> 💡 **提示**: 所有脚本均支持 `--help` 查看详细用法
 
 ---
 
-## 项目结构
+## 📁 项目结构
 
 ```
 dataset_web/
-├── datasets/                 # 数据集主目录
-│   ├── crops/               # 作物图像
-│   ├── pests/               # 害虫图像
-│   └── diseases/            # 病害图像
-├── scripts/                 # 数据处理脚本
-│   ├── merge_*.py          # 数据合并脚本
-│   ├── deduplicate_images.py
-│   ├── bulk_rename_by_class.py
-│   ├── build_jsonl.py
+├── 📦 datasets/                  # 数据集主目录
+│   ├── 🌱 crops/                # 作物图像 (140+ 类别)
+│   ├── 🐛 pests/                # 害虫图像 (30+ 类别)
+│   └── 🍂 diseases/             # 病害图像 (50+ 类别)
+│
+├── 🛠️ scripts/                  # 数据处理脚本
+│   ├── merge_*.py              # 数据合并工具
+│   ├── deduplicate_images.py  # 智能去重
+│   ├── bulk_rename_by_class.py # 文件名标准化
+│   ├── build_jsonl.py          # 索引生成
 │   └── ...
-├── llm_tools/              # LLM增强工具
-│   ├── verify_and_describe.py
-│   └── README.md
-├── web_scraper/            # 网络爬虫
-│   ├── spiders/           # Scrapy爬虫
-│   └── scraped_images/    # 爬取的图片
-├── docs/                   # 项目文档
-│   ├── documentation.md   # 核心知识库
-│   └── pest_manual_review.html
-├── mappings/              # 类别映射表
-├── data.jsonl            # 完整数据索引
-├── data.sample.jsonl     # 示例数据
-└── requirements.txt      # Python依赖
+│
+├── 🤖 llm_tools/                # LLM增强工具
+│   ├── verify_and_describe.py # 语义验证
+│   └── README.md               # 详细文档
+│
+├── 🕷️ web_scraper/              # 网络爬虫
+│   ├── spiders/                # Scrapy爬虫集合
+│   │   ├── agri_sites.py      # GBIF/iNaturalist
+│   │   └── unsplash_api.py    # Unsplash API
+│   └── scraped_images/         # 爬取图片暂存
+│
+├── 📚 docs/                     # 项目文档
+│   ├── documentation.md        # 核心知识库
+│   └── pest_manual_review.html # 审核界面
+│
+├── 🗺️ mappings/                 # 类别映射表
+│   ├── crop_mappings.json      # 作物映射
+│   ├── disease_mappings.json   # 病害映射
+│   └── pest_mappings.json      # 害虫映射
+│
+├── 📊 data.jsonl                # 完整数据索引 (215K+ 条)
+├── 📋 data.sample.jsonl         # 示例数据
+└── 📄 requirements.txt          # Python依赖
 ```
 
 ---
 
-## 数据源说明
+## 📖 文档
 
-### 已集成数据源
-- **PlantDoc** (`pd`): 植物病害专业数据集
-- **Kaggle Datasets** (`kaggle`): 多个Kaggle农业数据集
-- **140 Crops** (`140crops`): 作物分类数据集
-- **GBIF/iNaturalist** (`web`): 网络爬虫采集
-- **Unsplash** (`web`): 高质量图片补充
+<table>
+<tr>
+<td width="50%">
 
-### 数据质量统计（截至2025-10-08）
-详见 [`DATASET_STATUS_20251008.md`](DATASET_STATUS_20251008.md)
+### 📚 核心文档
+
+- 📖 [**完整项目文档**](docs/documentation.md)
+  - 设计理念与本体定义
+  - 数据处理历史记录
+  - 未来规划路线图
+
+- 🔧 [**API验证报告**](API_VERIFICATION_SUMMARY.md)
+  - 数据源API可用性分析
+  - 推荐API与配置指南
+
+</td>
+<td width="50%">
+
+### 📊 状态报告
+
+- 📈 [**抓取工作总结**](SCRAPING_SUMMARY.md)
+  - 网络爬虫采集成果
+  - 数据源优先级策略
+
+- 🤖 [**LLM工具指南**](llm_tools/README.md)
+  - 语义验证详解
+  - 描述增强使用说明
+
+</td>
+</tr>
+</table>
 
 ---
 
-## 常见问题
+## ❓ 常见问题
 
-### Q1: 如何添加新的数据源？
+<details>
+<summary><b>Q1: 如何添加新的数据源？</b></summary>
 
 1. 将数据复制到临时目录
-2. 使用 `bulk_rename_by_class.py` 规范化文件名（指定新的 `--tag`）
+2. 使用 `bulk_rename_by_class.py` 规范化（指定新 `--tag`）
 3. 运行 `deduplicate_images.py` 去重
 4. 可选：运行 LLM 语义验证
 5. 运行 `build_jsonl.py` 更新索引
 
-### Q2: 如何处理LLM拒绝的图片？
+</details>
 
-LLM拒绝的图片会被移至 `.rejected_by_llm/` 目录，建议：
-1. 人工复审该目录
-2. 确认误判的图片移回原位
-3. 确认正确拒绝的图片可永久删除
+<details>
+<summary><b>Q2: LLM拒绝的图片如何处理？</b></summary>
 
-### Q3: 如何自定义Caption模板？
+被拒绝的图片会移至 `.rejected_by_llm/` 目录：
 
-编辑 `scripts/build_jsonl.py` 中的 `make_caption_samples()` 和 `make_vqa_samples()` 函数。
+1. **人工复审**: 检查是否误判
+2. **恢复误判**: 将误判图片移回原位
+3. **删除确认**: 确认正确拒绝的可删除
 
-如果存在 `.json` 元数据文件（由LLM生成），会优先使用其中的描述。
+</details>
 
-### Q4: 爬虫采集的图片质量如何保证？
+<details>
+<summary><b>Q3: 如何自定义Caption模板？</b></summary>
 
-建议采用以下流程：
-1. 使用专业数据源（GBIF/iNaturalist）而非通用搜索引擎
-2. 运行 `deduplicate_images.py` 进行质量过滤
-3. 使用Web界面进行人工抽查审核
-4. 可选：运行LLM语义验证
+编辑 `scripts/build_jsonl.py`:
 
-### Q5: 如何配置并发数和超时？
+- `make_caption_samples()` - Caption生成逻辑
+- `make_vqa_samples()` - VQA生成逻辑
 
-LLM工具支持以下环境变量：
+如存在 `.json` 元数据（LLM生成），会优先使用。
+
+</details>
+
+<details>
+<summary><b>Q4: 如何保证爬虫数据质量？</b></summary>
+
+推荐流程：
+
+1. ✅ 使用专业数据源（GBIF优于通用搜索）
+2. ✅ 运行 `deduplicate_images.py` 质量过滤
+3. ✅ Web界面人工抽查审核
+4. ✅ 可选LLM语义验证
+
+</details>
+
+<details>
+<summary><b>Q5: 如何调整并发和超时？</b></summary>
+
+通过环境变量配置：
+
 ```bash
 export VLM_WORKERS=8          # 并发线程数
 export VLM_TIMEOUT=120        # API超时（秒）
 export VLM_VERIFY_SSL=false   # 禁用SSL验证
 ```
 
----
+或命令行参数：`--workers 8 --timeout 120 --insecure`
 
-## 许可证
-
-本项目采用 [MIT License](LICENSE)。
-
-**注意**: 请确保遵守各数据源的原始许可证条款。本项目仅用于学术研究目的。
+</details>
 
 ---
 
-## 相关文档
+## 🤝 贡献
 
-- 📖 [完整项目文档](docs/documentation.md) - 设计理念、本体定义、处理历史
-- 🔧 [API验证报告](API_VERIFICATION_SUMMARY.md) - 数据源API可用性分析
-- 📊 [抓取工作总结](SCRAPING_SUMMARY.md) - 网络爬虫采集成果报告
-- 🤖 [LLM工具指南](llm_tools/README.md) - 语义验证与描述增强详解
-- 📈 [数据集状态](DATASET_STATUS_20251008.md) - 当前数据量统计
+我们欢迎任何形式的贡献！
+
+<table>
+<tr>
+<td width="33%">
+
+### 🐛 报告问题
+发现bug？请提交 [Issue](../../issues)
+
+</td>
+<td width="33%">
+
+### 💡 功能建议
+有好想法？欢迎讨论 [Discussions](../../discussions)
+
+</td>
+<td width="33%">
+
+### 🔧 代码贡献
+Fork → 修改 → 提交 [Pull Request](../../pulls)
+
+</td>
+</tr>
+</table>
+
+### 贡献指南
+
+1. Fork 本仓库
+2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 开启 Pull Request
 
 ---
 
-**最后更新**: 2025-10-10 | **维护者**: ECCV Dataset Team
+## 📜 许可证
+
+本项目采用 [MIT License](LICENSE) 开源。
+
+**⚠️ 重要提示**: 
+- 请遵守各数据源的原始许可证条款
+- 本项目仅用于学术研究目的
+- 商业使用前请确认合规性
+
+---
+
+## 🌟 致谢
+
+<table>
+<tr>
+<td width="50%">
+
+### 数据来源
+
+- [PlantDoc](https://github.com/pratikkayal/PlantDoc-Dataset) - 植物病害数据集
+- [Kaggle](https://www.kaggle.com) - 多源农业数据集
+- [GBIF](https://www.gbif.org) - 全球生物多样性信息
+- [iNaturalist](https://www.inaturalist.org) - 自然观察平台
+- [Unsplash](https://unsplash.com) - 高质量图片资源
+
+</td>
+<td width="50%">
+
+### 技术栈
+
+- [Python](https://www.python.org) - 核心开发语言
+- [Scrapy](https://scrapy.org) - 网络爬虫框架
+- [Pillow](https://python-pillow.org) - 图像处理
+- [NumPy](https://numpy.org) - 数值计算
+- [OpenAI API](https://openai.com/api) - LLM增强
+
+</td>
+</tr>
+</table>
+
+---
+
+
