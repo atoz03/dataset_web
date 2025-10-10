@@ -50,3 +50,5 @@ pest_review_2025-10-04T06-15-15-418Z.json
 .factory/config.json
 .gitignore
 CLAUDE.md
+.DS_Store
+*.log
