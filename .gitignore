@@ -10,6 +10,7 @@ data*.jsonl
 
 # 忽略本地环境变量文件
 .env
+.env.*
 .env.local
 .env.secret
 !.env.example
@@ -19,12 +20,18 @@ data*.jsonl
 
 # 忽略kilocode的配置
 .kilocode/
+# 忽略claude的配置
+.claude/
 # 忽略垃圾箱
 .trash/
 
 # 忽略其他常见文件
 *.pyc
 __pycache__/
+
+# 忽略个人辅助脚本
+*.sh
+!scripts/*.sh
 
 # 忽略docs目录下的md文件
 docs/*.md

@@ -10,6 +10,19 @@ import concurrent.futures
 
 import requests
 
+# 尝试导入客户端
+try:
+    from gemini_client import GeminiVLMClient
+    GEMINI_CLIENT_AVAILABLE = True
+except ImportError:
+    GEMINI_CLIENT_AVAILABLE = False
+
+try:
+    from multi_api_client import MultiAPIClient
+    MULTI_API_CLIENT_AVAILABLE = True
+except ImportError:
+    MULTI_API_CLIENT_AVAILABLE = False
+
 # 配置日志记录
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -370,21 +383,71 @@ def main():
         logging.error("API key is missing. Please provide it via --api-key or the VLM_API_KEY environment variable.")
         return
 
-    verify_ssl = True
-    env_verify = os.environ.get("VLM_VERIFY_SSL")
-    if env_verify is not None:
-        verify_ssl = env_verify.lower() in {"1", "true", "yes"}
-    if args.insecure:
-        verify_ssl = False
-
+    # 检测使用哪个客户端
+    # 检查是否使用多API配置
+    use_multi_api = os.environ.get("VLM_USE_MULTI_API", "false").lower() in {"true", "1", "yes"}
+    
     try:
-        client = XmdbdVLMClient(
-            api_key=args.api_key,
-            base_url=args.api_base,
-            model=args.model,
-            timeout=args.timeout,
-            verify_ssl=verify_ssl,
-        )
+        if use_multi_api and MULTI_API_CLIENT_AVAILABLE:
+            # 多API负载均衡模式
+            logging.info("🔀 Using Multi-API load balancing mode")
+            api_configs = []
+            
+            # 主API
+            if os.environ.get("VLM_API_KEY") and os.environ.get("VLM_API_BASE"):
+                api_configs.append({
+                    'name': 'Primary (Free)',
+                    'api_key': os.environ.get("VLM_API_KEY"),
+                    'base_url': os.environ.get("VLM_API_BASE"),
+                    'model': os.environ.get("VLM_MODEL", "gemini-2.0-flash-exp"),
+                    'type': os.environ.get("VLM_TYPE", "gemini")
+                })
+            
+            # 备用API
+            if os.environ.get("VLM_API_KEY_2") and os.environ.get("VLM_API_BASE_2"):
+                api_configs.append({
+                    'name': 'Backup (Paid)',
+                    'api_key': os.environ.get("VLM_API_KEY_2"),
+                    'base_url': os.environ.get("VLM_API_BASE_2"),
+                    'model': os.environ.get("VLM_MODEL_2", "gemini-2.0-flash-001"),
+                    'type': os.environ.get("VLM_TYPE_2", "openai")
+                })
+            
+            if not api_configs:
+                logging.error("Multi-API mode enabled but no API configs found in environment")
+                return
+            
+            client = MultiAPIClient(api_configs, timeout=args.timeout)
+            logging.info(f"✅ Multi-API client ready with {len(api_configs)} sources")
+            
+        else:
+            # 单API模式（兼容旧逻辑）
+            use_gemini_client = "localhost" in args.api_base.lower() or "generativelanguage.googleapis.com" in args.api_base.lower()
+            
+            if use_gemini_client and GEMINI_CLIENT_AVAILABLE:
+                logging.info("Using Gemini API client (detected Google/local proxy endpoint)")
+                client = GeminiVLMClient(
+                    api_key=args.api_key,
+                    base_url=args.api_base,
+                    model=args.model,
+                    timeout=args.timeout,
+                )
+            else:
+                logging.info("Using OpenAI-compatible API client")
+                verify_ssl = True
+                env_verify = os.environ.get("VLM_VERIFY_SSL")
+                if env_verify is not None:
+                    verify_ssl = env_verify.lower() in {"1", "true", "yes"}
+                if args.insecure:
+                    verify_ssl = False
+                
+                client = XmdbdVLMClient(
+                    api_key=args.api_key,
+                    base_url=args.api_base,
+                    model=args.model,
+                    timeout=args.timeout,
+                    verify_ssl=verify_ssl,
+                )
     except Exception as exc:
         logging.error("Failed to initialize VLM client: %s", exc)
         return

@@ -827,6 +827,44 @@ python3 scripts/build_jsonl.py \
         2.  **生成审核清单**: 运行 `scripts/generate_pest_review_manifest.py` 为所有清洗后的新图片创建网页审核清单。
         3.  **网页端审核**: 打开 `docs/pest_manual_review.html`，对新图片进行快速的人工筛选，剔除不相关或质量差的样本。
         4.  **最终入库**: 使用 `scripts/import_reviewed_pests.py` 将审核通过的图片正式并入 `datasets/` 主数据集。
+
+-   **2025-10-18**:
+    -   **LLM语义增强系统优化与大规模处理启动**:
+        -   **问题诊断**: 上一session遗留任务（pests数据集LLM增强）遭遇严重429错误（10,432次），成功率仅1.2%（126/10558），32 workers并发过高导致免费API速率限制。
+        -   **核心优化**:
+            1.  **重试机制升级** (`gemini_client.py`): 最大重试5次，指数退避策略2s→4s→8s→16s→32s（带随机抖动0-1s）
+            2.  **双API负载均衡架构** (新增`multi_api_client.py` + `openai_client.py`):
+                -   主力API: 本地Gemini代理(免费，809密钥轮询) - 70%流量
+                -   备用API: 4zapi.com(付费但稳定，OpenAI格式) - 30%流量
+                -   容错机制: 单API失败自动切换，确保高可用性
+            3.  **并发控制优化**: Workers数量32→10→6（经实测6 workers + 双API是最优平衡）
+        -   **系统架构更新**:
+            -   新增 `llm_tools/openai_client.py`: 支持4zapi.com的OpenAI兼容API
+            -   新增 `llm_tools/multi_api_client.py`: 智能负载均衡，按成功率动态调整优先级
+            -   更新 `llm_tools/verify_and_describe.py`: 支持多API配置读取和自动切换
+            -   配置文件 `.env.llm`: 双源API配置(密钥、base URL、模型、类型等)
+        -   **大规模处理启动** (15:47开始，日志目录: `logs/llm_enhancement_20251018_154754/`):
+            -   **阶段1: Pests** (5,375张图片):
+                -   状态: 进行中，运行稳定
+                -   进度: 截至15:52已处理477张，生成JSON元数据
+                -   质量: 429错误仅43次（对比之前10,432次，降低99.6%）
+                -   发现: 正确识别并拒绝1张误标注图片（青蛙被错误标为slug）
+            -   **阶段2: Crops** (40,323张) - 待自动处理
+            -   **阶段3: Diseases** (172,867张) - 待自动处理
+        -   **性能指标**:
+            -   并发: 6 workers
+            -   速度: ~2-3 req/s（稳定，极少重试延迟）
+            -   预估成本: ~$15-20（约30%走付费API，gemini-2.0-flash-001约$0.075/1M input tokens）
+            -   预估总耗时: ~20-24小时（处理全部218,565张图片）
+        -   **技术细节**:
+            -   ACCEPTED图片: 在原位置生成同名`.json`文件，包含is_match、quality_score、description_en/zh等字段
+            -   REJECTED图片: 移至`.rejected_by_llm/<actual_class>/`目录，保留原文件名便于人工复审
+            -   断点续传: 自动跳过已有JSON的图片，支持中断恢复
+        -   **后续待办**:
+            1.  监控pests处理完成，检查`.rejected_by_llm/`目录进行人工复审
+            2.  crops和diseases数据集将按顺序自动处理
+            3.  全部完成后运行`scripts/build_jsonl.py`重新生成data.jsonl索引
+            4.  更新README.md和DATASET_STATUS文档统计数据
 ---
 
 <a id="app-b"></a>
