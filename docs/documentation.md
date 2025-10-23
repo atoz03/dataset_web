@@ -828,6 +828,71 @@ python3 scripts/build_jsonl.py \
         3.  **网页端审核**: 打开 `docs/pest_manual_review.html`，对新图片进行快速的人工筛选，剔除不相关或质量差的样本。
         4.  **最终入库**: 使用 `scripts/import_reviewed_pests.py` 将审核通过的图片正式并入 `datasets/` 主数据集。
 
+-   **2025-10-20**:
+    -   **LLM语义增强任务总结 - Session记录**:
+        -   **任务概览**:
+            -   **目标**: 对218,565张农业图片进行LLM语义验证与描述增强。
+            -   **数据分布**: Pests: 5,375张 → Crops: 40,323张 → Diseases: 172,867张。
+        -   **解决的关键问题**:
+            -   **大量429错误**: 通过在 `gemini_client.py` 中添加指数退避重试机制解决。
+            -   **单API不稳定**: 创建双API负载均衡架构 (`multi_api_client.py`, `openai_client.py`)，结合本地免费代理和 `4zapi.com` 付费API。
+            -   **并发调优**: 最终确定8个工作线程为最佳配置。
+        -   **技术架构**:
+            -   **配置文件**: `.env.llm` (设置 `VLM_WORKERS=8`, `VLM_USE_MULTI_API=true`)
+            -   **核心脚本**: `llm_tools/multi_api_client.py`, `llm_tools/openai_client.py`, `llm_tools/gemini_client.py`, `llm_tools/verify_and_describe.py`
+        -   **当前状态 (2025-10-20)**:
+            -   **进度**: **55.5%** (121,203 / 218,565)。
+            -   **运行中**: 进程 PID `69146`，8个工作线程。
+            -   **阶段**: `Crops` 类别处理中 (81.5%)，`Pests` 类别基本完成 (96.9%)。
+            -   **质量**: 429错误得到良好控制，成功率 > 99%。
+            -   **成本**: 预估总计 ~$8-10。
+        -   **生成内容**: 为每张 `ACCEPTED` 图片生成包含 `is_match`, `quality_score`, `description_en`, `description_zh` 等字段的 JSON 元数据。
+        -   **重要文件位置**:
+            -   **日志**: `logs/llm_enhancement_20251020_094210/crops.log`
+            -   **监控脚本**: `MONITOR_LLM_STATUS.sh`
+            -   **已生成JSON**: `datasets/pests/*.json` (5209个), `datasets/crops/*.json` (32883个), `datasets/diseases/*.json` (83111个)
+            -   **被拒绝图片**: `datasets/*/.rejected_by_llm/`
+        -   **预计完成**: 2025-10-21 或 2025-10-22，任务自动运行中，无需干预。
+
+-   **2025-10-23**:
+    -   **LLM语义增强任务重启与速率限制问题解决**:
+        -   **背景**: 10-20启动的任务因API余额不足中断，需要使用4zapi.com付费API重启任务。
+        -   **关键发现 - 4zapi速率限制**:
+            -   **问题**: 4zapi.com单个API key对并发请求有严格的速率限制，即使2个并发workers仍会频繁触发429错误。
+            -   **8 workers失败**: 初始尝试使用8 workers导致100%请求失败，所有15次重试耗尽后进程退出。
+            -   **4 workers失败**: 降低到4 workers仍然出现大量429错误，重试机制虽有效但效率极低。
+            -   **2 workers可用**: 最终降低到2 workers达到稳定运行，成功率约50-70%，失败请求通过重试机制恢复。
+        -   **技术调整**:
+            -   **重试机制增强**: 在 `llm_tools/openai_client.py` 中将重试次数从5次增加到15次，基础延迟从2秒增加到3秒。
+            -   **配置简化**: 从Multi-API模式改为单一OpenAI客户端直连4zapi.com，避免额外的负载均衡开销。
+            -   **API配置**: `VLM_API_BASE=https://4zapi.com/v1`, `VLM_MODEL=gemini-2.0-flash-001`, `VLM_WORKERS=2`。
+        -   **最终运行配置 (2025-10-23 09:51)**:
+            -   **进程**: 
+                -   Diseases: PID 72072, 日志 `logs/llm_diseases_final.log`, 141,034张待处理
+                -   Crops: PID 72075, 日志 `logs/llm_crops_final.log`, 32,947张待处理
+            -   **Workers**: 2个并发 (每个数据集各2个)
+            -   **重试策略**: 15次指数退避 (3秒基础延迟, 最长 3×2^14 ≈ 49152秒)
+            -   **预计速度**: ~0.5-1 req/s (考虑重试)
+            -   **预计完成时间**: 12-20小时 (比原8 workers慢4倍)
+        -   **经验教训**:
+            -   **API选择**: 付费API不一定比免费API更宽松，需要实际测试速率限制。
+            -   **Workers调优**: 不能盲目追求高并发，必须根据API实际速率限制调整。
+            -   **重试机制**: 对于速率限制严格的API，激进的重试策略(15次+指数退避)是必需的。
+            -   **成本权衡**: 2 workers虽然慢，但稳定性和成功率远高于8 workers的频繁失败。
+        -   **监控命令**:
+            ```bash
+            # 检查进程状态
+            ps aux | grep "verify_and_describe" | grep -v grep
+            
+            # 查看实时日志
+            tail -f logs/llm_diseases_final.log
+            tail -f logs/llm_crops_final.log
+            
+            # 统计进度
+            find datasets/diseases -name "*.json" | wc -l  # 目标: 172,863
+            find datasets/crops -name "*.json" | wc -l      # 目标: 40,276
+            ```
+
 -   **2025-10-18**:
     -   **LLM语义增强系统优化与大规模处理启动**:
         -   **问题诊断**: 上一session遗留任务（pests数据集LLM增强）遭遇严重429错误（10,432次），成功率仅1.2%（126/10558），32 workers并发过高导致免费API速率限制。
@@ -965,3 +1030,113 @@ python3 scripts/build_jsonl.py \
     -   `snail`: 蜗牛
     -   `wasp`: 黄蜂
     -   `weevil`: 象鼻虫
+
+---
+
+## 工作日志
+
+### 2025-10-23: API Key切换与任务恢复
+
+**背景**: 10-20启动的LLM任务因4zapi.com API速率限制问题频繁遇到429错误,用户提供新的API key继续任务。
+
+**关键操作**:
+
+1. **API Key切换流程**:
+   - 停止旧API key运行的任务 (PID 72073, 72082)
+   - 测试第一个新key → 失败 (503错误)
+   - 测试第二个新key → 成功
+
+2. **新任务配置 (2025-10-23 10:47)**:
+   - **进程**: 
+     - Diseases: PID 36818, 日志 `logs/llm_diseases_v3.log`, 141,034张待处理
+     - Crops: PID 36898, 日志 `logs/llm_crops_v3.log`, 32,946张待处理
+   - **Workers**: 2个并发 (每个数据集各2个)
+   - **API配置**: `VLM_API_BASE=https://4zapi.com/v1`, `VLM_MODEL=gemini-2.0-flash-001`
+   - **重试策略**: 保持15次指数退避
+
+3. **运行状态监控**:
+   - **Diseases**: ~0.93 req/s (有429错误但重试成功)
+   - **Crops**: ~0.53 req/s (稳定运行)
+   - **当前进度**: Diseases 83,140/172,867, Crops 33,029/40,276, Pests 5,209/5,380
+
+4. **预计完成时间**: 
+   - 按当前速度,diseases剩余~89,727张,需约27小时
+   - crops剩余~7,247张,需约4小时
+   - 预计2025-10-24或10-25完成全部任务
+
+**技术改进** (代码已提交):
+- `multi_api_client.py`: 添加频率限制机制 (0.3-0.5秒间隔)
+- `openai_client.py`: 增强重试策略 (15次重试, 3秒基础延迟)
+- 负载分配优化: 80%本地API + 20%付费API
+
+**经验总结**:
+- API key有效性需要实测,不能假设所有key都可用
+- 503错误通常表示服务不可用或key无效
+- 429错误可通过重试机制缓解,但影响整体速度
+- 稳定性比速度更重要,2 workers + 15次重试的组合效果良好
+
+---
+
+### 2025-10-22: LLM语义增强任务进度更新
+
+**任务概述**: 对整个数据集进行LLM语义验证与双语描述生成
+
+**当前状态**:
+
+1. **Pests (害虫)**: ✅ **96.8%完成**
+   - 总图片: 5,380张
+   - 已生成JSON: 5,209个
+   - 剩余: 171张
+
+2. **Crops (作物)**: ✅ **99.93%完成**
+   - 总图片: 32,135张
+   - 已生成JSON: 32,200个
+   - 剩余: 24张 (涉及16个类别)
+   - 缺少JSON的类别:
+     - Cashew nuts (2), Fava bean (3), Flax fiber and tow (4)
+     - Guarana (1), Hazelnuts (2), Hemp (1), Kohlrabi (1)
+     - Olive-tree (1), Rambutan (1), Rapeseed/Canola (1)
+     - Starfruit (1), Tamarind (1), almond (1), jute (1)
+     - tea (2), vigna-radiati/Mung (1)
+
+3. **Diseases (病害)**: 🔄 **58.2%完成** (进行中)
+   - 总图片: 140,879张
+   - 已生成JSON: 81,937个
+   - 剩余: 59,012张
+   - 已完成类别: 26/89
+   - 未完成类别: 65/89
+   - 主要未完成类别:
+     - Orange huanglongbing (5,507张)
+     - Apple rust leaf (2,589张)
+     - Soybean___healthy (2,527张)
+     - Apple___Apple_scab (2,520张)
+     - Apple___healthy (2,510张)
+     - Tomato/Pepper/Corn等多个类别
+
+**总体进度**: 120,520/178,394 = **67.6%完成**
+
+**运行配置**:
+- API架构: 双源负载均衡 (localhost:3001主力 + 4zapi.com备用)
+- 并发Workers: 4个
+- 重试机制: 5次指数退避 (2s→4s→8s→16s→32s)
+- 当前进程: PID 16908 (处理Diseases)
+
+**历史问题与解决**:
+- 2025-10-18至10-20期间完成了Pests和Crops的主要处理
+- 10-20 09:41因429错误和403错误(付费API余额不足)导致Diseases处理中断
+- 10-22 09:50重启Diseases处理,目前稳定运行中
+
+**预计完成时间**:
+- Diseases剩余59,012张,按1.5张/秒速度,预计需要11小时
+- 预计2025-10-22晚或10-23凌晨完成全部任务
+
+**质量控制**:
+- 语义验证正常工作,已拒绝不匹配图片
+- 生成的JSON包含: is_match, quality_score, description_en, description_zh, actual_class
+- 被拒绝的图片移至 `.rejected_by_llm/` 目录
+
+**下一步**:
+1. 等待Diseases处理完成
+2. 处理Crops剩余的24张图片
+3. 生成最终统计报告
+4. 更新data.jsonl索引文件

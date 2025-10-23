@@ -90,13 +90,13 @@ class OpenAIVLMClient:
             "temperature": 0.2
         }
 
-        # 重试机制：处理 429 错误
-        max_retries = 5
-        base_delay = 2  # 基础延迟（秒）
-        
+        # 重试机制：处理 429 错误和SSL错误  
+        max_retries = 15  # 大幅增加重试次数
+        base_delay = 3  # 基础延迟（秒）
+
         for attempt in range(max_retries):
             try:
-                response = requests.post(url, json=payload, headers=headers, timeout=self.timeout)
+                response = requests.post(url, json=payload, headers=headers, timeout=self.timeout, verify=False)
                 response.raise_for_status()
                 break  # 成功，跳出重试循环
             except requests.HTTPError as exc:

@@ -1,6 +1,7 @@
 """多API源负载均衡客户端"""
 import logging
 import random
+import time
 from pathlib import Path
 from typing import Dict, Any, List, Union
 from gemini_client import GeminiVLMClient
@@ -54,11 +55,19 @@ class MultiAPIClient:
             raise RuntimeError("No API clients could be initialized")
         
         logging.info(f"Multi-API client ready with {len(self.clients)} sources")
-        
+
         # 统计每个客户端的成功/失败次数
         self.success_counts = [0] * len(self.clients)
         self.failure_counts = [0] * len(self.clients)
         self.current_index = 0
+
+        # 频率限制：追踪每个客户端的最后调用时间
+        self.last_call_times = [0.0] * len(self.clients)
+        # 每个客户端的最小调用间隔（秒）- 针对免费API更保守
+        self.min_intervals = [0.3] * len(self.clients)  # 默认0.3秒间隔
+        # 第一个API（本地Gemini轮询）使用更保守的间隔
+        if self.clients:
+            self.min_intervals[0] = 0.5  # 本地API: 0.5秒间隔，约2 req/s
     
     def analyze_image(self, image_path: Path, expected_class: str) -> Dict[str, Any]:
         """
@@ -83,8 +92,9 @@ class MultiAPIClient:
         
         # 负载分配：第一个API优先（免费），其他API分担压力
         if len(self.clients) > 1:
-            # 60%概率用第一个（免费），40%概率用第二个（付费但更稳定）- 提高并发时增加付费比例
-            if random.random() < 0.6:
+            # 80%概率用第一个（本地Gemini免费轮询），20%概率用第二个（4zapi付费备用）
+            # 本地API有轮询密钥机制，可承担更多负载
+            if random.random() < 0.8:
                 indices = [0] + [i for i in range(1, len(self.clients))]
             else:
                 indices = list(range(1, len(self.clients))) + [0]
@@ -97,11 +107,24 @@ class MultiAPIClient:
         for idx in indices:
             client = self.clients[idx]
             client_name = self.client_names[idx]
-            
+
+            # 频率限制：检查距离上次调用的时间间隔
+            time_since_last_call = time.time() - self.last_call_times[idx]
+            required_interval = self.min_intervals[idx]
+
+            if time_since_last_call < required_interval:
+                sleep_time = required_interval - time_since_last_call
+                logging.debug(f"⏳ Rate limiting {client_name}: sleeping {sleep_time:.2f}s")
+                time.sleep(sleep_time)
+
             try:
                 logging.debug(f"Trying {client_name} (success: {self.success_counts[idx]}, failure: {self.failure_counts[idx]})")
+
+                # 记录调用时间
+                self.last_call_times[idx] = time.time()
+
                 result = client.analyze_image(image_path, expected_class)
-                
+
                 # 成功
                 self.success_counts[idx] += 1
                 logging.debug(f"✅ {client_name} succeeded")
