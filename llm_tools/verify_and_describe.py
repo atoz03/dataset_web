@@ -7,6 +7,7 @@ from pathlib import Path
 import logging
 from typing import Dict, Any
 import concurrent.futures
+from datetime import datetime
 
 import requests
 
@@ -24,7 +25,6 @@ except ImportError:
     MULTI_API_CLIENT_AVAILABLE = False
 
 # 配置日志记录
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
 class VLMAPIError(RuntimeError):
@@ -241,7 +241,8 @@ def process_directory(
     root_dir: Path,
     action: str = "move",
     output_metadata: bool = True,
-    max_workers: int = 4
+    max_workers: int = 4,
+    skip_existing_metadata: bool = False
 ) -> None:
     """
     Concurrently processes all images in a directory using a thread pool.
@@ -270,6 +271,8 @@ def process_directory(
         expected_class = root_dir.name
         for image_path in root_dir.rglob('*'):
             if image_path.is_file() and image_path.suffix.lower() in image_extensions:
+                if skip_existing_metadata and image_path.with_suffix('.json').exists():
+                    continue
                 tasks.append((image_path, expected_class))
     else:
         logging.info("Scanning for images in subdirectories...")
@@ -280,6 +283,8 @@ def process_directory(
             expected_class = class_dir.name
             for image_path in class_dir.rglob('*'):
                 if image_path.is_file() and image_path.suffix.lower() in image_extensions:
+                    if skip_existing_metadata and image_path.with_suffix('.json').exists():
+                        continue
                     tasks.append((image_path, expected_class))
 
     if not tasks:
@@ -376,8 +381,40 @@ def main():
         default=int(os.environ.get("VLM_WORKERS", "4")),
         help="Number of concurrent workers for processing images. Defaults to 4 or VLM_WORKERS env var."
     )
+    parser.add_argument(
+        "--skip-existing-metadata",
+        action="store_true",
+        help="Skip images that already have a sibling .json metadata file."
+    )
 
     args = parser.parse_args()
+
+    # --- New logging setup ---
+    log_dir = Path("logs")
+    date_str = datetime.now().strftime("%Y-%m-%d")
+    time_str = datetime.now().strftime("%H%M%S")
+
+    # New log directory structure: logs/YYYY-MM-DD/llm_enhancement_HHMMSS
+    run_log_dir = log_dir / date_str / f"llm_enhancement_{time_str}"
+    run_log_dir.mkdir(parents=True, exist_ok=True)
+
+    log_file_path = run_log_dir / "run.log"
+
+    # Configure logging to both file and console
+    # Remove any existing handlers to prevent duplicate logs in interactive sessions
+    for handler in logging.root.handlers[:]:
+        logging.root.removeHandler(handler)
+    
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.FileHandler(log_file_path),
+            logging.StreamHandler() # Also log to console
+        ]
+    )
+    logging.info(f"Logging to {log_file_path}")
+    # --- End new logging setup ---
 
     if not args.api_key:
         logging.error("API key is missing. Please provide it via --api-key or the VLM_API_KEY environment variable.")
@@ -458,7 +495,8 @@ def main():
         root_path,
         action=args.action,
         output_metadata=not args.no_metadata,
-        max_workers=args.workers
+        max_workers=args.workers,
+        skip_existing_metadata=args.skip_existing_metadata
     )
 
     logging.info("Processing complete.")

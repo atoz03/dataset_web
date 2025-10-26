@@ -327,17 +327,21 @@ datasets/
 
 - 配置项（环境变量优先，CLI 可覆盖）
   - `VLM_API_KEY`（必填）：访问密钥；建议写入 `.env`，避免提交到 git。
-  - `VLM_API_BASE`：默认 `https://xmdbd.online/v1`。
-  - `VLM_MODEL`：默认 `gemini-2.5-flash`。
+  - `VLM_API_BASE`：默认 `https://xmdbd.online/v1`。当前生产（2025-10-26）使用 `https://88996.cloud`。
+  - `VLM_MODEL`：默认 `gemini-2.5-flash`。当前生产使用 `gemini-2.0-flash-lite`。
   - `VLM_TIMEOUT`：请求超时秒数，默认 `120`。
-  - `VLM_WORKERS`：并发工作线程数，默认 `4`。
+  - `VLM_WORKERS`：并发工作线程数，默认 `4`。当前生产使用 `16`。
   - `VLM_VERIFY_SSL`：`true|false`，默认为 `true`；若服务端证书链未完善，可设为 `false` 或在 CLI 使用 `--insecure`。
+  - `VLM_TYPE`：`openai|xmdbd`，当前生产使用 `openai`（OpenAI 兼容协议）。
 
 - 运行示例
   - 干跑（不改动文件，使用 8 个并发线程）：
     - `python3 llm_tools/verify_and_describe.py --root datasets/diseases --action dry-run --workers 8 --insecure`
   - 实际执行（针对单个类目，接受即写 `.json` 元数据，拒绝移动/删除）：
     - `python3 llm_tools/verify_and_describe.py --root "datasets/diseases/Apple Scab Leaf" --model gemini-2.5-flash --workers 4 --insecure`
+  - 一键全量（当前生产配置，环境变量从 `.env.llm` 读取）：
+    - `bash START_LLM.sh`（分阶段依次处理 pests → crops → diseases；日志位于 `logs/llm_enhancement_*/`）
+    - 监控：`bash MONITOR_LLM_STATUS.sh`、`bash STATUS.sh`
 
 - 日志要点
   - 默认 `INFO` 级别；输出 `ACCEPTED/REJECTED` 与原因；dry-run 模式会显示“将要移动”的目标路径。
@@ -1034,6 +1038,35 @@ python3 scripts/build_jsonl.py \
 ---
 
 ## 工作日志
+
+### 2025-10-26: LLM 语义增强（新 API + 16 并发）运行与实时状态
+
+本次运行用于补齐此前未覆盖的害虫数据与“final”批次失败的积压样本，使用你提供的新接口配置，已稳定运行中。
+
+- 运行配置（当前生产 Profile）
+  - VLM_API_BASE: https://88996.cloud
+  - VLM_MODEL: gemini-2.5-flash-lite-nothinking
+  - VLM_TYPE: openai（OpenAI 兼容协议）
+  - VLM_WORKERS: 16（并发）
+  - Multi-API: 开启（VLM_USE_MULTI_API=true），客户端：OpenAI 格式
+  - 启动命令：`bash START_LLM.sh`
+  - 监控命令：`bash MONITOR_LLM_STATUS.sh`、`bash STATUS.sh`
+  - 仅处理未生成 .json 的样本：已开启 `--skip-existing-metadata`
+
+- 实时进度（最新）：
+  - Pests: 100%
+  - Crops: 34310 / 40276 ≈ 85.2%
+  - Diseases: 83472 / 172864 ≈ 48.3%
+  - 总计（按已生成 JSON 计）: 122,651 / 218,565 ≈ 56.1%
+  - 累计处理（含拒绝）: 已处理 152,356 / 215,729 ≈ 70.62%（接受 122,651；拒绝 29,705）
+
+  - 最新状态（16:16 更新）：后台任务仍在运行中，进度已更新。`pests` 阶段无待处理样本（直接完成），已进入 `crops` 阶段。
+
+- 说明与策略
+  - 10-23 的 v3 批次已完成 crops+diseases 主体（约 16,918 张）。
+  - 10-23 的 "final" 重跑受 429/503 影响失败较多，本轮继续回补失败样本并补齐 pests。
+  - 若需调整并发或切换 API，请更新 `.env.llm` 并重新执行 `START_LLM.sh`。
+
 
 ### 2025-10-23: API Key切换与任务恢复
 
