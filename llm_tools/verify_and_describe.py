@@ -10,6 +10,10 @@ import concurrent.futures
 from datetime import datetime
 
 import requests
+import re
+import time
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 # 尝试导入客户端
 try:
@@ -57,6 +61,11 @@ class XmdbdVLMClient:
             "Content-Type": "application/json",
         })
         self.session.verify = verify_ssl
+        # Avoid inheriting system proxy env to reduce ProxyError/RemoteDisconnected
+        try:
+            self.session.trust_env = False
+        except Exception:
+            pass
         if not verify_ssl:
             try:
                 from urllib3 import disable_warnings
@@ -66,6 +75,29 @@ class XmdbdVLMClient:
                 logging.warning("TLS verification disabled for XMDBD VLM client; proceed with caution.")
             except ImportError:
                 logging.warning("urllib3 not available; unable to suppress insecure request warnings.")
+        # Increase connection pool to reduce 'Connection pool is full' warnings
+        try:
+            pool_size = int(os.environ.get("VLM_POOL_MAXSIZE", "64"))
+        except Exception:
+            pool_size = 64
+        # Robust HTTP retries for transient errors and proxy resets
+        retry = Retry(
+            total=int(os.environ.get("VLM_HTTP_TOTAL_RETRIES", "3")),
+            backoff_factor=float(os.environ.get("VLM_HTTP_BACKOFF", "0.5")),
+            status_forcelist=[429, 500, 502, 503, 504],
+            allowed_methods={"POST"},
+            raise_on_status=False,
+        )
+        adapter = HTTPAdapter(max_retries=retry, pool_connections=pool_size, pool_maxsize=pool_size)
+        self.session.mount("https://", adapter)
+        self.session.mount("http://", adapter)
+
+        # Retries for non-JSON outputs
+        try:
+            self._max_retries = max(0, int(os.environ.get("VLM_MAX_RETRIES", "2")))
+        except Exception:
+            self._max_retries = 2
+
         logging.info("XMDBD VLM client initialized for model '%s'", self.model)
 
     def _build_prompt(self, expected_class: str) -> str:
@@ -80,7 +112,7 @@ class XmdbdVLMClient:
             "is_match (boolean), "
             "actual_class (string, null if is_match is true, or if the actual class cannot be determined), "
             "quality_score (float 0-1), "
-            "rejection_reason (null or string), "
+            "rejection_reason (string; when is_match is false this MUST be a concise, non-empty reason; never null), "
             "description_en (string), "
             "description_zh (string)."
         )
@@ -108,43 +140,86 @@ class XmdbdVLMClient:
         mime_type, _ = mimetypes.guess_type(str(image_path))
         if not mime_type:
             mime_type = "application/octet-stream"
-        payload = {
-            "model": self.model,
-            "messages": [
-                {
-                    "role": "system",
-                    "content": "You are a meticulous assistant that only outputs valid JSON objects.",
-                },
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": self._build_prompt(expected_class),
-                        },
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:{mime_type};base64,{encoded_image}",
-                            },
-                        },
-                    ],
-                },
-            ],
-            "response_format": {"type": "json_object"},
-            "temperature": 0.2,
-        }
+        def build_payload(strict: bool = False) -> Dict[str, Any]:
+            sys_text = "Respond with ONLY a single valid JSON object. No code fences, no extra text."
+            if not strict:
+                sys_text = "You are a meticulous assistant that only outputs valid JSON objects."
+            return {
+                "model": self.model,
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": sys_text,
+                    },
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": self._build_prompt(expected_class)},
+                            {"type": "image_url", "image_url": {"url": f"data:{mime_type};base64,{encoded_image}"}},
+                        ],
+                    },
+                ],
+                "response_format": {"type": "json_object"},
+                "temperature": 0.0,
+            }
 
-        data = self._post("/chat/completions", payload)
-        content = self._extract_content(data)
+        def coerce_json(text: str) -> Dict[str, Any]:
+            try:
+                return json.loads(text)
+            except Exception:
+                pass
+            m = re.search(r"```(?:json)?\s*(\{[\s\S]*?\})\s*```", text)
+            if m:
+                inner = m.group(1)
+                try:
+                    return json.loads(inner)
+                except Exception:
+                    pass
+            start = text.find('{')
+            while start != -1:
+                depth = 0
+                for i in range(start, len(text)):
+                    c = text[i]
+                    if c == '{':
+                        depth += 1
+                    elif c == '}':
+                        depth -= 1
+                        if depth == 0:
+                            candidate = text[start:i+1]
+                            try:
+                                return json.loads(candidate)
+                            except Exception:
+                                break
+                start = text.find('{', start + 1)
+            raise VLMAPIError("Model response is not valid JSON")
 
-        try:
-            parsed = json.loads(content)
-        except json.JSONDecodeError as exc:
-            raise VLMAPIError("Model response is not valid JSON") from exc
-
-        self._validate_payload(parsed)
-        return parsed
+        delay = 0.5
+        last_exc: Exception | None = None
+        for attempt in range(self._max_retries + 1):
+            strict = attempt > 0
+            data = self._post("/chat/completions", build_payload(strict=strict))
+            content = self._extract_content(data)
+            try:
+                parsed = coerce_json(content)
+                # Ensure non-empty rejection_reason when not matched
+                try:
+                    if not parsed.get("is_match"):
+                        rr = parsed.get("rejection_reason")
+                        if not isinstance(rr, str) or not rr.strip():
+                            actual = parsed.get("actual_class") or "unknown"
+                            parsed["rejection_reason"] = f"Expected '{expected_class}', got '{actual}'."
+                except Exception:
+                    pass
+                self._validate_payload(parsed)
+                return parsed
+            except Exception as exc:
+                last_exc = exc
+                if attempt < self._max_retries:
+                    time.sleep(delay)
+                    delay *= 2
+                    continue
+                break
+        raise VLMAPIError(str(last_exc) if last_exc else "Model response is not valid JSON")
 
     @staticmethod
     def _extract_content(response_payload: Dict[str, Any]) -> str:

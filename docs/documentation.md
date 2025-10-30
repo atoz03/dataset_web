@@ -715,6 +715,37 @@ python3 scripts/build_jsonl.py \
 <a id="app-a-2"></a>
 ### A.2 关键合并与处理日志
 
+-   **2025-10-30**:
+    -   **爬虫数据LLM验证与导入完成**:
+        -   **验证流程**: 对 `web_scraper/scraped_images` 中的 22,328 张爬虫图片执行LLM语义验证
+            - **使用模型**: gemini-2.5-flash-lite-nothinking (API: https://88996.cloud/v1)
+            - **并发配置**: 32 workers，启用 `--insecure` 和 `--skip-existing-metadata`
+            - **验证结果**: 通过 3,315 张 (14.8%)，拒绝 19,005 张 (85.2%)
+            - **拒绝原因**: 大量图片不符合类别标准（如错误分类、无关内容、质量不佳等）
+        -   **导入处理**: 使用 `scripts/import_llm_verified_scraped.py --tag web`
+            - **实际导入**: 3,309 张图片到 101 个类别文件夹
+            - **命名规范**: 所有文件添加 `__web__` 来源标签
+            - **分布**: crops (21类), diseases (44类), pests (36类)
+        -   **数据集端去重**: 对导入的图片执行按类去重（blur + ham=3）
+            - **去重参数**: `--blur-method both --blur-threshold 60 --tenengrad-threshold 700 --ham-threshold 3 --near-scope class`
+            - **清理结果**: 移除少量模糊和重复图片到 `.trash/` 目录
+        -   **JSONL索引更新**: 重新生成 `data.jsonl`
+            - **总记录数**: 1,237,412 条 (比10月8日增加 31,232 条)
+            - **本次新增 (__web__)**: 121,765 条 (9.8%)
+            - **数据划分**: train 79.2%, val 9.7%, test 11.1%
+        -   **最终数据集规模**:
+            - **datasets/crops**: 41,040 张 (164,348 条JSONL记录)
+            - **datasets/diseases**: 173,173 张 (1,029,536 条JSONL记录)
+            - **datasets/pests**: 10,882 张 (43,528 条JSONL记录)
+            - **总计**: 225,095 张图片 (1,237,412 条JSONL记录)
+        -   **关键脚本**:
+            - LLM验证: `llm_tools/verify_and_describe.py`
+            - 导入: `scripts/import_llm_verified_scraped.py`
+            - 去重: `scripts/deduplicate_images.py`
+            - JSONL生成: `scripts/build_jsonl.py`
+        -   **日志位置**: `logs/scraped_llm_continue_20251029_*.log`, `logs/scraped_import_20251030_*.log`
+        -   **说明**: 本次验证拒绝率较高（85%），主要因为爬虫数据来源广泛，包含大量边界情况和误分类图片。通过严格的LLM验证，确保了最终导入数据集的高质量标准。
+
 -   **2025-10-09**:
     -   **大规模图片抓取完成** (详见 `SCRAPING_RESULTS_20251209.md`):
         -   **策略**: 删除所有Bing相关爬虫，采用 GBIF/iNaturalist (`agri_sites`) + Unsplash API 组合
