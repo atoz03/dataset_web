@@ -1,0 +1,161 @@
+# High Priority Pest Keywords - 2025 Large Scale Crawl
+# Focus on categories with <100 images
+# Format optimized for GBIF/iNaturalist (scientific names work better)
+
+# === Critical Categories (<20 images) ===
+
+# Aphids (2-18 images currently)
+aphid green insect pest plant
+Aphis gossypii cotton aphid
+Aphis fabae black bean aphid
+Myzus persicae green peach aphid
+melon aphid Aphis gossypii
+
+# Whiteflies (2-6 images currently)
+Bemisia tabaci silverleaf whitefly
+Trialeurodes vaporariorum greenhouse whitefly
+whitefly pest agriculture damage
+
+# Spider Mites (2 images)
+Tetranychus urticae two spotted spider mite
+red spider mite pest agriculture
+spider mite web plant damage
+
+# Thrips (8-10 images)
+Frankliniella occidentalis western flower thrips
+Thrips tabaci onion thrips
+thrips insect pest agriculture damage
+
+# Scale Insects (2-8 images)
+Diaspididae armored scale insect
+Coccidae soft scale insect
+Pseudococcus mealybug pest
+scale insect honeydew plant
+
+# Borers (2-6 images)
+Ostrinia nubilalis european corn borer
+Chilo suppressalis rice stem borer
+corn borer larvae damage
+stem borer pest agriculture
+
+# Bollworms (2 images)
+Helicoverpa armigera cotton bollworm
+Pectinophora gossypiella pink bollworm
+bollworm larvae cotton damage
+
+# Grubs (4-14 images)
+white grub beetle larvae soil
+scarab beetle grub damage
+japanese beetle grub lawn pest
+grub larvae root damage
+
+# Parasitic Wasps (2 images - beneficial but need images)
+Trichogramma parasitic wasp
+Braconidae parasitic wasp pest control
+parasitic wasp biological control
+
+# === Medium Priority (20-50 images) ===
+
+# Weevils
+Anthonomus grandis boll weevil
+Sitophilus rice weevil granary
+Otiorhynchus black vine weevil
+weevil beetle pest agriculture
+
+# Fruit Flies
+Bactrocera dorsalis oriental fruit fly
+Ceratitis capitata mediterranean fruit fly
+Drosophila suzukii spotted wing drosophila
+fruit fly pest infestation
+
+# Stink Bugs
+Halyomorpha halys brown marmorated stink bug
+Nezara viridula green stink bug
+Euschistus stink bug crop pest
+stink bug agriculture damage
+
+# Cutworms
+Agrotis ipsilon black cutworm
+cutworm larvae pest agriculture
+cutworm caterpillar seedling damage
+
+# Leafmoppers
+Cicadellidae leafhopper insect
+Empoasca fabae potato leafhopper
+leafhopper pest vector disease
+
+# Sawflies
+Diprionidae pine sawfly
+Cephus cinctus wheat stem sawfly
+sawfly larvae defoliating pest
+
+# Crickets and Mole Crickets
+Gryllotalpa mole cricket pest
+Gryllus field cricket agriculture
+cricket pest crop damage
+
+# Cicadas
+Magicicada periodical cicada
+cicada nymph plant damage
+cicada pest agriculture
+
+# Japanese Beetles
+Popillia japonica japanese beetle
+japanese beetle crop damage defoliating
+
+# Colorado Potato Beetle
+Leptinotarsa decemlineata colorado potato beetle
+potato beetle pest defoliating
+
+# Cucumber Beetles
+Acalymma vittatum striped cucumber beetle
+Diabrotica cucumber beetle pest
+cucumber beetle crop damage
+
+# Armyworms
+Spodoptera frugiperda fall armyworm
+Mythimna unipuncta armyworm caterpillar
+armyworm pest agriculture damage
+
+# Cabbage Worms
+Pieris rapae cabbage white butterfly
+cabbage worm caterpillar pest
+imported cabbageworm damage
+
+# Tomato Hornworm
+Manduca quinquemaculata tomato hornworm
+hornworm caterpillar defoliating pest
+
+# Locusts
+Schistocerca gregaria desert locust
+Locusta migratoria migratory locust
+locust swarm agriculture devastation
+
+# === Additional High-Value Pests ===
+
+# Wireworms
+Agriotes wireworm click beetle larvae
+wireworm pest soil damage
+
+# Termites (agriculture context)
+termite crop damage agriculture
+subterranean termite pest control
+
+# Nematodes (microscopic - harder to photograph)
+root knot nematode Meloidogyne
+nematode plant disease agriculture
+
+# Earwigs (need more variety)
+Forficula auricularia european earwig
+earwig pest damage plants
+
+# Moths (specific species needed)
+Cydia pomonella codling moth
+Lymantria dispar gypsy moth
+Plutella xylostella diamondback moth
+Helicoverpa moth armyworm
+
+# Grasshoppers (need more variety)
+Melanoplus grasshopper pest
+grasshopper crop damage agriculture
+locust grasshopper swarm
