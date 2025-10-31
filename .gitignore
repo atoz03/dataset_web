@@ -49,14 +49,15 @@ web-bundles/
 web_scraper/scraped_images/
 web_scraper/agri_sites_run.log
 tmp/http_8000.log
-.gitignore
 tmp/http_8000.pid
 web_scraper/pest_review_manifest.js
 web_scraper/site_configs/wikimedia_only.json
-pest_review_2025-10-04T06-15-15-418Z.json
+pest_review_*.json
 .factory/config.json
-.gitignore
-CLAUDE.md
 .DS_Store
 *.log
 logs/missing_no_json.txt
+
+# 忽略所有备份文件
+*.backup
+*.backup_*
