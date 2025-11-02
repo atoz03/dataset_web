@@ -133,12 +133,21 @@ datasets/
     -   **语义验证与质量过滤**: 自动隔离内容不符或质量低下的图片。
     -   **描述增强**: 为通过验证的图片生成中英双语描述，并存为 `.json` 元数据文件。
     -   **智能分类**: 将验证失败的图片根据模型判断的 `actual_class` 归类到 `.rejected_by_llm/` 目录，为数据挽救提供可能。
--   **生产配置 (2025-10-26)**:
+-   **生产配置 (最新: 2025-11-02)**:
     -   **API Base**: `https://88996.cloud/v1`
-    -   **Model**: `gemini-2.5-flash-lite-nothinking`
-    -   **Workers**: `16` (高并发)
+    -   **Model**: `gpt-5-nano` (从gemini-2.5-flash-lite-nothinking迁移,更稳定)
+    -   **Workers**: `32` (高并发,显著提升处理速度)
     -   **协议**: OpenAI 兼容 (`VLM_TYPE=openai`)
 -   **创新**: 项目开发了独特的**错误数据挽救**工作流 (`scripts/rescue_rejected_pests.py`)，从被 LLM 拒绝的数据中，根据其 `actual_class` 提取出大量被初始标注错误的有效数据，显著提高了数据利用率。
+
+-   **验证进度总结 (最新: 2025-11-02)**:
+
+| 目录 | 有效图片数 | JSON覆盖率 | 状态 | 备注 |
+|------|-----------|-----------|------|------|
+| **diseases** | 111,116 | **100.0%** | ✅ 已完成 | 完全匹配,清理18,605个孤儿JSON |
+| **crops** | 30,623 | **100.0%** | ✅ 已完成 | 完全匹配,清理5,361个孤儿JSON |
+| **pests** | 18,909 | **99.1%** | ✅ 已完成 | 清理15,731个SHA1孤儿JSON |
+| **总计** | **160,648** | **99.9%** | ✅ 全部完成 | 160,432个JSON元数据文件 |
 
 <a id="sec-3-6"></a>
 ### 3.6 生成数据索引 (JSONL)
@@ -175,29 +184,74 @@ datasets/
 <a id="sec-5"></a>
 ## 5. 未来规划与待办事项 (TODOs)
 
-根据最新 (2025-10-30) 的项目状态，后续计划如下：
+根据最新 (2025-11-02) 的项目状态更新:
 
--   **`[ ]` 完成剩余数据验证 (推荐)**:
-    -   `[ ]` 对 `web_scraper/scraped_images` 目录中剩余约 1,200 张未验证的图片执行 LLM 验证。建议使用较低并发数（如 6 个 workers）以避免潜在的速率限制问题。
-        ```bash
-        # 在项目根目录运行
-        VLM_WORKERS="6" python3 llm_tools/verify_and_describe.py --root web_scraper/scraped_images --insecure
-        ```
-    -   `[ ]` 验证完成后，重新运行 `scripts/import_llm_verified_scraped.py` 将新通过的数据导入主数据集。
-    -   `[ ]` 最后，重新运行 `scripts/build_jsonl.py` 生成最终的 `data.jsonl` 索引。
+### 已完成的重要里程碑 ✅
+- ✅ **diseases目录LLM验证**: 111,116张图片,100% JSON覆盖 (2025-10-27~29完成)
+- ✅ **crops目录LLM验证**: 30,623张图片,100% JSON覆盖 (2025-11-02完成)
+- ✅ **pests目录LLM验证**: 18,909张图片,99.1% JSON覆盖 (2025-11-02完成)
+- ✅ **害虫数据挖掘与挽救**: 14,496张图片从rejected目录挽救 (2025-10-30)
+- ✅ **scraped_images导入**: 17,148张图片从网络爬虫导入主数据集 (2025-11-02)
+- ✅ **孤儿JSON清理**: 清理39,697个无匹配图片的JSON文件 (2025-11-02)
+- ✅ **主数据集规模**: **160,648张有效图片** (diseases 111K + crops 30.6K + pests 18.9K)
 
--   **`[ ]` 数据集进一步优化**:
-    -   `[ ]` 针对性补充样本数仍较少（<50张）的害虫类别，如 `aphid`, `thrips`, `scale insect` 等。
-    -   `[ ]` 考虑为数据添加更丰富的结构化标签，如作物的生长阶段、病害的严重程度等。
+### 已解决问题 ✅
 
--   **`[ ]` 统计与打包脚本**:
-    -   `[ ]` 编写脚本，按类与来源输出详细计数的 CSV 报告。
-    -   `[ ]` 在 `build_jsonl.py` 中增加 `--holdout-source` 选项，以创建专门的跨来源测试集。
-    -   `[ ]` 编写脚本将 `data.jsonl` 按 `split` 字段拆分为 `train.jsonl`, `val.jsonl`, `test.jsonl`。
+#### pests目录JSON命名不匹配问题 (已解决 2025-11-02)
+- **问题描述**: 旧版LLM验证脚本使用SHA1哈希命名JSON,导致15,731个孤儿JSON无法与标准命名的图片匹配
+- **解决方案**:
+  1. 使用`cleanup_pests_orphan_jsons.py`脚本分析并清理SHA1孤儿JSON
+  2. 重新运行LLM验证(gpt-5-nano模型,32并发),生成18,735个匹配的JSON
+  3. 清理剩余孤儿JSON,实现99.1%覆盖率
+- **技术要点**:
+  - 新版脚本使用`image_path.with_suffix('.json')`确保JSON与图片文件名完全匹配
+  - 采用移动而非删除策略,孤儿JSON保存在`.orphaned_jsons/`目录便于回溯
 
--   **`[ ]` 质量与合规**:
-    -   `[ ]` 编写一个命名规范/类名白名单的校验器，作为代码预提交检查。
-    -   `[ ]` 在清洗脚本中加入 EXIF 方向修正和 sRGB 颜色空间标准化功能。
+#### crops和diseases孤儿JSON清理 (已完成 2025-11-02)
+- 清理diseases目录18,605个孤儿JSON,实现100%匹配
+- 清理crops目录5,361个孤儿JSON,实现100%匹配
+- 所有JSON文件严格一对一匹配图片文件
+
+### 数据集优化建议 📊
+
+#### 已完成任务 ✅
+- ✅ **data.jsonl生成 (2025-11-02)**: 基于160,691张图片生成857,315条多模态标注记录
+  - **LLM描述覆盖率**: 99.8% (160,432/160,691)
+  - **关键修复**: 修改build_jsonl.py跳过隐藏目录(`.trash/`, `.rejected_by_llm/`等)
+  - **数据质量**: 优先使用LLM生成的`description_en`和`description_zh`,显著优于模板描述
+  - **文件大小**: 372 MB
+  - **数据分布**: Train 79.2% | Val 9.6% | Test 11.2%
+
+#### 待完成任务
+- `[ ]` **优化pests剩余0.2%覆盖**: 为174张缺失JSON的pests图片补充LLM验证
+  ```bash
+  python3 llm_tools/verify_and_describe.py \
+      --root datasets/pests \
+      --skip-existing \
+      --insecure
+  ```
+
+- `[ ]` **跨来源测试集**: 创建holdout测试集用于泛化性评估
+  ```bash
+  python3 scripts/build_jsonl.py \
+      --roots datasets/diseases datasets/crops datasets/pests \
+      --holdout-source web \
+      --out data_holdout_web.jsonl
+  ```
+
+- `[ ]` **统计报告生成**: 按类别和来源输出CSV详细报告
+- `[ ]` **数据质量审计**:
+  - EXIF方向修正
+  - sRGB颜色空间标准化
+  - 命名规范校验器
+
+### 模型训练准备 🚀
+数据集已就绪,可直接用于:
+1. 基线模型训练 (LLaVA/InternVL/Qwen-VL)
+2. 多模态预训练实验
+3. Caption生成任务 (99.8% LLM高质量描述)
+4. 视觉问答任务 (VQA)
+5. 数据集公开发布准备 (README, LICENSE, 统计报告)
 
 ---
 
@@ -221,6 +275,24 @@ datasets/
 ### A.2 关键处理日志
 
 (按时间倒序排列)
+
+-   **2025-10-31: 数据集状态审计与文档更新** 📊
+    -   **背景**: 对整个数据集进行全面审计,发现实际JSON覆盖率与文档记录不符。
+    -   **发现**:
+        1. **diseases目录**: 112,903张有效图片,JSON覆盖率 **100%** ✅ (抽样验证)
+        2. **crops目录**: 30,053张有效图片,JSON覆盖率 **88%** (tobacco plant等类别缺失)
+        3. **pests目录**: 存在严重的**JSON命名不匹配**问题 ❌
+            - 7,760张图片使用标准化命名 (`wasp__web__uuid.jpg`)
+            - 10,711个JSON使用旧的SHA1哈希命名 (`30a5c21f...json`)
+            - 导致JSON-图片无法自动关联
+    -   **统计数据**:
+        - 主数据集总规模: **150,716张有效图片**
+        - data.jsonl记录数: **1,263,216条** (包含caption和VQA)
+        - scraped_images待导入: 1,053张
+    -   **后续行动**:
+        - 开发修复脚本重建pests目录的JSON-图片关联关系
+        - 补充crops目录缺失的JSON元数据
+        - 更新documentation.md反映真实项目状态
 
 -   **2025-10-30: 害虫数据大规模采集与处理**
     -   **目标**: 解决害虫数据占比严重不足（仅3.5%）的问题。

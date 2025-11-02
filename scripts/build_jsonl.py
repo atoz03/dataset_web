@@ -41,6 +41,10 @@ def is_image(p: Path) -> bool:
 def list_images(root: Path) -> List[Path]:
     out: List[Path] = []
     for r, _, files in os.walk(root):
+        r_path = Path(r)
+        # Skip hidden directories (starting with .)
+        if any(part.startswith('.') for part in r_path.parts):
+            continue
         for f in files:
             p = Path(r) / f
             if is_image(p):
@@ -278,6 +282,16 @@ def build_caption_and_vqa(root: str, class_name: str, path: Path, override: Opti
     crop = norm_crop_name_from_class(class_name, root)
     crop_zh = zh_crop(crop) if crop else None
 
+    # Try to load LLM-generated metadata
+    json_path = path.with_suffix('.json')
+    llm_metadata = None
+    if json_path.exists():
+        try:
+            with open(json_path, 'r', encoding='utf-8') as f:
+                llm_metadata = json.load(f)
+        except Exception:
+            pass
+
     items: List[dict] = []
     if root == "diseases":
         if override is not None:
@@ -286,17 +300,22 @@ def build_caption_and_vqa(root: str, class_name: str, path: Path, override: Opti
             source = override.get("source", source)
         else:
             healthy, disease = infer_health_and_disease(class_name)
-        # Captions
-        if healthy:
-            en = f"A healthy {crop} leaf."
-            zh = f"一张健康的{crop_zh}叶片。" if crop_zh else f"一张健康的叶片。"
+        # Captions - prefer LLM-generated descriptions
+        if llm_metadata and llm_metadata.get('is_match') and llm_metadata.get('description_en'):
+            en = llm_metadata['description_en']
+            zh = llm_metadata.get('description_zh', f"一张{class_name}。")
         else:
-            if disease:
-                en = f"A {crop} leaf showing {disease}." if crop else f"A leaf showing {disease}."
-                zh = f"一张{crop_zh}叶片，患有{disease}。" if crop_zh else f"一张叶片，患有{disease}。"
+            # Fallback to template-based captions
+            if healthy:
+                en = f"A healthy {crop} leaf."
+                zh = f"一张健康的{crop_zh}叶片。" if crop_zh else f"一张健康的叶片。"
             else:
-                en = f"A {class_name}."
-                zh = f"一张{class_name}。"
+                if disease:
+                    en = f"A {crop} leaf showing {disease}." if crop else f"A leaf showing {disease}."
+                    zh = f"一张{crop_zh}叶片，患有{disease}。" if crop_zh else f"一张叶片，患有{disease}。"
+                else:
+                    en = f"A {class_name}."
+                    zh = f"一张{class_name}。"
         items.append({"image": rel, "task": "caption", "text": en, "lang": "en",
                       "labels": {"root": root, "class": class_name, "crop": crop, "disease": disease, "healthy": healthy, "source": source}})
         items.append({"image": rel, "task": "caption", "text": zh, "lang": "zh",
@@ -324,8 +343,13 @@ def build_caption_and_vqa(root: str, class_name: str, path: Path, override: Opti
     elif root == "crops":
         crop = class_name
         crop_zh = zh_crop(crop) or crop
-        en = f"A photo of {crop}."
-        zh = f"一张{crop_zh}的图像。"
+        # Prefer LLM-generated descriptions
+        if llm_metadata and llm_metadata.get('is_match') and llm_metadata.get('description_en'):
+            en = llm_metadata['description_en']
+            zh = llm_metadata.get('description_zh', f"一张{crop_zh}的图像。")
+        else:
+            en = f"A photo of {crop}."
+            zh = f"一张{crop_zh}的图像。"
         items.append({"image": rel, "task": "caption", "text": en, "lang": "en",
                       "labels": {"root": root, "class": class_name, "crop": crop, "source": source}})
         items.append({"image": rel, "task": "caption", "text": zh, "lang": "zh",
@@ -337,8 +361,13 @@ def build_caption_and_vqa(root: str, class_name: str, path: Path, override: Opti
     else:  # pests
         pest = class_name
         pest_zh = CROP_ZH.get(pest, CROP_ZH.get(pest.lower(), pest))
-        en = f"An image of {pest}."
-        zh = f"一张{pest_zh}的图像。"
+        # Prefer LLM-generated descriptions
+        if llm_metadata and llm_metadata.get('is_match') and llm_metadata.get('description_en'):
+            en = llm_metadata['description_en']
+            zh = llm_metadata.get('description_zh', f"一张{pest_zh}的图像。")
+        else:
+            en = f"An image of {pest}."
+            zh = f"一张{pest_zh}的图像。"
         items.append({"image": rel, "task": "caption", "text": en, "lang": "en",
                       "labels": {"root": root, "class": class_name, "pest": pest, "source": source}})
         items.append({"image": rel, "task": "caption", "text": zh, "lang": "zh",
