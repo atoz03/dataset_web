@@ -36,6 +36,13 @@
 
 ---
 
+## 📦 数据发布与获取（重要说明）
+
+- 本仓库暂不附带完整数据集，原因：体量较大（数十万张图片，多模态标注）。
+- 我们将于近期在 Hugging Face Hub 发布公开版本的数据集（含 JSONL 索引与示例）。
+- 发布后会在本 README 置顶更新下载链接与获取方式：`https://huggingface.co/datasets/<org>/<dataset_name>`（占位）。
+- 目前可使用 `data.sample.jsonl` 与配套脚本复现流程或自建数据；完整结构与规范见 `docs/documentation.md`。
+
 ## 🎯 项目愿景
 
 > 从单一的图像分类到丰富的多模态理解
