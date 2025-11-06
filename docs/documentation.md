@@ -191,20 +191,19 @@ datasets/
 #### 已完成任务 ✅
 
 - ✅ **跨来源测试集 (web holdout, 2025-11-06)**: 生成 `data_holdout_web.jsonl`，仅含 `web` 来源样本（约 133,133 条），用于跨来源泛化评估。
+- ✅ **统计报告生成 (2025-11-06)**: 实现 `scripts/generate_stats.py`，生成4个CSV报告：
+  - `counts_by_class.csv` (465个类别统计)
+  - `counts_by_source.csv` (9个来源统计)
+  - `counts_by_split.csv` (train/val/test划分统计)
+  - `class_source_pivot.csv` (类别×来源交叉透视表)
+  - **数据集总览**: 160,643张唯一图片，990,256条JSONL记录（平均每张图片6.2个标注）
 
-#### 待完成任务
+#### 待完成任务！
 
 **首要优先**
 
 **  高价值补全**
 
-* **统计报告生成（CSV）**
-  * **目标：按类别（labels.class）、来源（labels.source）、划分（split）输出汇总统计，辅助发布与训练采样。**
-  * **建议实现：新增 scripts/generate_stats.py，读取 data.jsonl 与 data_holdout_web.jsonl，输出：**
-    * **counts_by_class.csv**
-    * **counts_by_source.csv**
-    * **counts_by_split.csv**
-    * **class_source_pivot.csv**
 * **数据质量审计工具**
   * **目标：提升数据一致性与可训练性。**
   * **文档出处：docs/documentation.md:240**

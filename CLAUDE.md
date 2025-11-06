@@ -223,6 +223,33 @@ python3 scripts/build_jsonl.py \
     --out data.jsonl
 ```
 
+#### 6. 生成统计报告
+
+```bash
+# 生成完整的CSV统计报告
+python3 scripts/generate_stats.py \
+    --jsonl data.jsonl data_holdout_web.jsonl \
+    --out-dir stats_reports
+
+# 输出文件:
+#   stats_reports/counts_by_class.csv      (按类别统计)
+#   stats_reports/counts_by_source.csv     (按来源统计)
+#   stats_reports/counts_by_split.csv      (按划分统计)
+#   stats_reports/class_source_pivot.csv   (类别×来源交叉表)
+
+# 仅查看终端摘要(不生成CSV)
+python3 scripts/generate_stats.py \
+    --jsonl data.jsonl \
+    --summary-only
+```
+
+**说明:**
+
+- 所有CSV文件使用UTF-8 with BOM编码,Excel可直接打开
+- 自动去重统计唯一图片数(通过`image`字段)
+- 包含生成时间戳和来源JSONL文件名
+- 透视表显示每个类别在各来源的图片分布
+
 ### 网络爬虫
 
 #### 运行爬虫(在web_scraper目录下)
