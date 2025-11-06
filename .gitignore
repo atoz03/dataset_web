@@ -33,12 +33,10 @@ __pycache__/
 *.sh
 !scripts/*.sh
 
-# 忽略docs目录下的所有文件，除了documentation.md和timeline.md
-docs/*
+# 忽略 docs 目录下除 documentation.md 与 timeline.md 外的所有内容
+docs/**
 !docs/documentation.md
 !docs/timeline.md
-# 确保documentation.md和timeline.md不被忽略
-!docs/*.md
 
 # 忽略web打包产物与BMAD生成内容
 web-bundles/
