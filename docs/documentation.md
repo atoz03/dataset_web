@@ -194,11 +194,35 @@ datasets/
 
 #### 待完成任务
 
-- `[ ]` **统计报告生成**: 按类别和来源输出CSV详细报告
-- `[ ]` **数据质量审计**:
-  - EXIF方向修正
-  - sRGB颜色空间标准化
-  - 命名规范校验器
+**首要优先**
+
+**  高价值补全**
+
+* **统计报告生成（CSV）**
+  * **目标：按类别（labels.class）、来源（labels.source）、划分（split）输出汇总统计，辅助发布与训练采样。**
+  * **建议实现：新增 scripts/generate_stats.py，读取 data.jsonl 与 data_holdout_web.jsonl，输出：**
+    * **counts_by_class.csv**
+    * **counts_by_source.csv**
+    * **counts_by_split.csv**
+    * **class_source_pivot.csv**
+* **数据质量审计工具**
+  * **目标：提升数据一致性与可训练性。**
+  * **文档出处：docs/documentation.md:240**
+  * **建议实现三个无损/可回滚的工具（先 dry-run 模式）：**
+    * **EXIF 方向修正：遍历图片，应用 ImageOps.exif_transpose，仅在需要时写回；输出审计日志。**
+    * **sRGB 统一：将非 sRGB 转换（保留副本到 .normalized/ 或原地写回需确认）。**
+    * **命名规范校验器：检查小写、****source** 标记、合法扩展名、UUID 形态；输出违规清单 CSV。
+  * **注意：图像就地改写属潜在高风险操作，执行前需确认路径与回滚策略。**
+
+**  模型与发布准备**
+
+* **模型训练准备**
+  * **动作建议：**
+    * **基线实验配置（LLaVA/InternVL/Qwen-VL）模板与数据加载脚本。**
+    * **训练/评估分布复核（与 stats 报告联动）。**
+* **发布资料**
+  * **目标：面向公开或内部复用**
+  * **动作建议：完善 README/许可证/统计报告/数据卡（Data Card），补全 docs/documentation.md 的执行痕迹。**
 
 ### 模型训练准备 🚀
 
