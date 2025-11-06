@@ -31,7 +31,7 @@ from typing import Dict, Iterable, List, Optional, Tuple
 
 
 IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".bmp", ".gif", ".webp"}
-SOURCE_TOKENS = ("__cd__", "__pd__", "__ac__", "__ap__", "__kd__")
+SOURCE_TOKENS = ("__cd__", "__pd__", "__ac__", "__ap__", "__kd__", "__web__")
 
 
 def is_image(p: Path) -> bool:
@@ -381,7 +381,8 @@ def build_caption_and_vqa(root: str, class_name: str, path: Path, override: Opti
 
 def build_dataset(roots: List[Path], ratios: Tuple[float, float, float], seed: int, out_path: Path,
                   include_pp2020: bool = False, pp2020_root: Optional[Path] = None,
-                  include_pp2021: bool = False, pp2021_root: Optional[Path] = None) -> None:
+                  include_pp2021: bool = False, pp2021_root: Optional[Path] = None,
+                  holdout_source: Optional[str] = None) -> None:
     all_paths: List[Tuple[str, Path]] = []  # (root_name, path)
     for r in roots:
         if not r.exists():
@@ -422,6 +423,11 @@ def build_dataset(roots: List[Path], ratios: Tuple[float, float, float], seed: i
                 extra = pp2021_map.get(e["image"]) if root_name == 'diseases' else None
                 if extra is not None:
                     e.setdefault('labels', {}).update({ 'pp2021': extra.get('pp2021') })
+                # If holdout_source is set, only include entries matching that source
+                if holdout_source is not None:
+                    src = (e.get('labels') or {}).get('source')
+                    if src != holdout_source:
+                        continue
                 wf.write(json.dumps(e, ensure_ascii=False) + "\n")
         # Optionally append Kaggle Plant Pathology datasets directly from sources/ via CSV (Scheme A)
         if include_pp2020 and pp2020_root is not None and pp2020_root.exists():
@@ -531,6 +537,7 @@ def main(argv: List[str]) -> int:
     ap.add_argument("--pp2020-root", default="sources/plant-pathology-2020-fgvc7", help="Root dir for PP2020")
     ap.add_argument("--include-pp2021", action="store_true", help="Include Plant Pathology 2021 via CSV from sources/")
     ap.add_argument("--pp2021-root", default="sources/plant-pathology-2021-fgvc8", help="Root dir for PP2021")
+    ap.add_argument("--holdout-source", default=None, help="Only include samples with this source (e.g., 'web')")
     args = ap.parse_args(argv)
 
     if abs(args.train + args.val + args.test - 1.0) > 1e-6:
@@ -547,6 +554,7 @@ def main(argv: List[str]) -> int:
         pp2020_root=Path(args.pp2020_root),
         include_pp2021=args.include_pp2021,
         pp2021_root=Path(args.pp2021_root),
+        holdout_source=args.holdout_source,
     )
     return 0
 
