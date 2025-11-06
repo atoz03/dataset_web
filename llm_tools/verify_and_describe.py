@@ -136,7 +136,38 @@ class XmdbdVLMClient:
 
         logging.info("Analyzing %s for class '%s'...", image_path, expected_class)
 
-        encoded_image = base64.b64encode(image_path.read_bytes()).decode("utf-8")
+        # Compress large images to avoid 413 errors (max 500KB)
+        image_bytes = image_path.read_bytes()
+        max_size_bytes = 500 * 1024  # 500KB
+
+        if len(image_bytes) > max_size_bytes:
+            try:
+                from PIL import Image
+                import io
+
+                img = Image.open(io.BytesIO(image_bytes))
+
+                # Convert RGBA to RGB if necessary
+                if img.mode == 'RGBA':
+                    img = img.convert('RGB')
+
+                # Compress with progressive quality reduction
+                quality = 85
+                while quality > 20:
+                    buffer = io.BytesIO()
+                    img.save(buffer, format='JPEG', quality=quality, optimize=True)
+                    compressed_bytes = buffer.getvalue()
+
+                    if len(compressed_bytes) <= max_size_bytes:
+                        image_bytes = compressed_bytes
+                        logging.info(f"Compressed {image_path.name} from {len(image_path.read_bytes())/1024:.1f}KB to {len(compressed_bytes)/1024:.1f}KB (quality={quality})")
+                        break
+                    quality -= 10
+
+            except Exception as e:
+                logging.warning(f"Failed to compress {image_path.name}: {e}, using original")
+
+        encoded_image = base64.b64encode(image_bytes).decode("utf-8")
         mime_type, _ = mimetypes.guess_type(str(image_path))
         if not mime_type:
             mime_type = "application/octet-stream"
@@ -345,6 +376,9 @@ def process_directory(
         logging.info("Root directory appears to be a single class directory. Processing it directly.")
         expected_class = root_dir.name
         for image_path in root_dir.rglob('*'):
+            # Skip hidden directories (starting with .)
+            if any(part.startswith('.') for part in image_path.parts):
+                continue
             if image_path.is_file() and image_path.suffix.lower() in image_extensions:
                 if skip_existing_metadata and image_path.with_suffix('.json').exists():
                     continue
@@ -354,9 +388,12 @@ def process_directory(
         for class_dir in root_dir.iterdir():
             if not class_dir.is_dir() or class_dir.name.startswith('.'):
                 continue
-            
+
             expected_class = class_dir.name
             for image_path in class_dir.rglob('*'):
+                # Skip hidden directories (starting with .)
+                if any(part.startswith('.') for part in image_path.parts):
+                    continue
                 if image_path.is_file() and image_path.suffix.lower() in image_extensions:
                     if skip_existing_metadata and image_path.with_suffix('.json').exists():
                         continue
