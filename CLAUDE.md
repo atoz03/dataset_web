@@ -33,79 +33,118 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```
 dataset_web/
-├── datasets/                # 标准化数据根目录（crops/pests/diseases）
+├── datasets/                      # 标准化数据根目录（crops/pests/diseases）
 │   ├── crops/
 │   ├── pests/
 │   └── diseases/
-├── scripts/                 # 数据处理脚本（见下方清单）
-├── llm_tools/               # LLM 验证与描述生成工具
-├── web_scraper/             # 爬虫项目与缓存
+├── scripts/                       # 数据处理脚本（见下方清单）
+│   ├── 00_utilities/              # 监控、启动、状态检查脚本
+│   ├── 01_scraping/               # 网络爬虫相关脚本
+│   ├── 02_ingest_and_merge/       # 数据导入与合并
+│   ├── 03_cleaning/               # 数据清洗、去重、审核
+│   ├── 04_llm_enhancement/        # LLM语义验证与增强
+│   └── 05_index_and_stats/        # 索引生成与统计分析
+├── llm_tools/                     # LLM 验证与描述生成工具
+├── web_scraper/                   # 爬虫项目与缓存
 ├── docs/
-│   ├── documentation.md     # 核心知识库（务必阅读）
-│   ├── timeline.md          # 时间线与里程碑
-│   ├── dev_notes/           # 助手提示 & 记忆库
-│   └── archive/             # 历史文档与备份
-├── stats_reports/           # 统计报表输出目录
-├── mappings/                # 类别映射表（crop/disease/pest）
-├── data.jsonl               # 全量多模态索引
-├── data_holdout_web.jsonl   # 网爬保留集（验证用）
-├── data.sample.jsonl        # 小样本示例
-├── logs/                    # 任务与审计日志
-├── sources/                 # 原始来源清单
-└── docs/documentation.md    # 再次强调：核心文档
+│   ├── documentation.md           # 核心知识库（务必阅读）
+│   ├── timeline.md                # 时间线与里程碑
+│   ├── dev_notes/                 # 开发笔记与记忆库
+│   ├── archive/                   # 历史文档与备份
+│   │   ├── reports/               # 历史报告（API验证、爬虫总结、任务执行等）
+│   │   └── backups/               # 数据备份文件
+│   ├── technical/                 # 技术文档
+│   └── pest_manual_review.html    # 人工审核界面
+├── stats_reports/                 # 统计报表输出目录
+├── mappings/                      # 类别映射表（crop/disease/pest）
+├── data.jsonl                     # 全量多模态索引
+├── data_holdout_web.jsonl         # 网爬保留集（验证用）
+├── data.sample.jsonl              # 小样本示例
+├── datasets.zip                   # 数据集打包归档（不纳入版本控制）
+├── logs/                          # 任务与审计日志
+├── sources/                       # 原始来源清单
+├── CLAUDE.md                      # 本文件：Claude助手工作指南
+└── README.md                      # 项目README
 ```
 
 > 若新增目录或文件，请在 `docs/timeline.md` 或对应文档中登记，保持结构可追溯。
+>
+> **根目录整洁原则**：根目录仅保留核心配置文件、README、CLAUDE.md和数据索引文件。所有脚本、报告、备份均已归档至对应子目录。
 
 ---
 
 ## 🔁 标准工作流（Playbook 摘要）
 
-1. **数据合并**：
-   - 复用 `scripts/merge_*.py` 族脚本（如 `merge_crop_diseases.py`、`merge_140_crops.py`）。
-   - 始终“复制而非移动”，保持原始数据完整；必要时补充映射表。
-2. **命名标准化**：
-   - 运行 `python3 scripts/bulk_rename_by_class.py --root <目录> --tag <cd|pd|ac|ap>`。
+1. **数据合并**（02_ingest_and_merge）：
+   - 复用 `scripts/02_ingest_and_merge/merge_*.py` 族脚本（如 `merge_crop_diseases.py`、`merge_140_crops.py`）。
+   - 始终"复制而非移动"，保持原始数据完整；必要时补充映射表。
+2. **命名标准化**（03_cleaning）：
+   - 运行 `python3 scripts/03_cleaning/bulk_rename_by_class.py --root <目录> --tag <cd|pd|ac|ap>`。
    - 文件名格式：`<类别名>__<来源标签>__<uuid>.<ext>`，扩展名小写。
-3. **去重与清洗**：
-   - 使用 `scripts/deduplicate_images.py`，推荐先 `--action move` 移至 `.trash/`。
+3. **去重与清洗**（03_cleaning）：
+   - 使用 `scripts/03_cleaning/deduplicate_images.py`，推荐先 `--action move` 移至 `.trash/`。
    - 常用参数：`--min-width 224 --min-height 224 --blur-method both --blur-threshold 60`。
-4. **人工审核**：
-   - 生成清单：`python3 scripts/generate_pest_review_manifest.py` 等。
-   - 使用 `python3 scripts/pest_review_server.py` 或 `docs/pest_manual_review.html`（需本地 HTTP 服务）。
-5. **LLM 语义增强**：
+4. **人工审核**（03_cleaning）：
+   - 生成清单：`python3 scripts/03_cleaning/generate_pest_review_manifest.py` 等。
+   - 使用 `python3 scripts/03_cleaning/pest_review_server.py` 或 `docs/pest_manual_review.html`（需本地 HTTP 服务）。
+5. **LLM 语义增强**（04_llm_enhancement）：
    - 调用 `python3 llm_tools/verify_and_describe.py --root <路径> --workers 6`。
    - 支持多 API 客户端（`multi_api_client.py`），需配置 `.env.llm`。
-6. **生成 JSONL 索引**：
+   - 监控：使用 `scripts/00_utilities/monitor_llm_verification.sh` 或 `scripts/04_llm_enhancement/monitor_llm_tasks.py`。
+6. **生成 JSONL 索引**（05_index_and_stats）：
    - 命令示例：
      ```bash
-     python3 scripts/build_jsonl.py \
+     python3 scripts/05_index_and_stats/build_jsonl.py \
          --roots datasets/diseases datasets/crops datasets/pests \
          --out data.jsonl \
          --train 0.8 --val 0.1 --test 0.1 \
          --seed 42
      ```
    - 默认生成 Caption/VQA 双任务条目，标签包含 `root/class/crop/disease/healthy/source`。
-7. **统计与验收**：
-   - 使用 `python3 scripts/generate_stats.py` 输出 CSV/JSON 报表。
-   - 运行 `python3 scripts/count_images_by_class.py` 或 `python3 scripts/import_reviewed_pests.py` 等辅助脚本。
+7. **统计与验收**（05_index_and_stats）：
+   - 使用 `python3 scripts/05_index_and_stats/generate_stats.py` 输出 CSV/JSON 报表。
+   - 运行 `python3 scripts/03_cleaning/count_images_by_class.py` 或 `python3 scripts/02_ingest_and_merge/import_reviewed_pests.py` 等辅助脚本。
 8. **记录行动**：
-   - 将执行命令、参数、统计结果写入 `docs/dev_notes/` 或 `docs/archive/origin*.md`。
+   - 将执行命令、参数、统计结果写入 `docs/dev_notes/` 或 `docs/archive/`。
+   - 重大变更需同时更新 `docs/timeline.md`。
 
 ---
 
-## 🔧 常用脚本速查
+## 🔧 常用脚本速查（按工作流阶段分类）
 
-- `merge_crop_diseases.py` / `merge_kaggle_disease.py`：整合外部病害数据并映射标准类名。
-- `merge_140_crops.py`：批量引入作物类数据集。
-- `bulk_rename_by_class.py`：根据目录结构与来源标签统一重命名。
-- `deduplicate_images.py`：支持 pHash/aHash 去重、模糊检测、尺寸过滤。
-- `cleanup_pests_orphan_jsons.py`：清理孤立的 LLM JSON 元数据。
-- `generate_pest_review_manifest.py` / `import_reviewed_pests.py`：配合人工审核与结果回流。
-- `generate_stats.py`：输出类别、来源分布统计。
-- `build_jsonl.py`：生成多模态 JSONL（Caption + VQA）。
-- `verify_and_describe.py`：调用多 API 对图片生成描述并执行语义校验。
-- `run_comprehensive_scraping.sh` / `scrape_pests_comprehensive.sh`：批量爬虫任务入口，需遵守爬虫策略。
+### 00_utilities/ - 监控与辅助工具
+- `monitor_*.sh`：各类监控脚本（清洗、LLM、爬虫等）
+- `START_*.sh`：LLM服务启动脚本
+- `run_llm_enhancement.sh`：批量LLM增强任务
+- `STATUS.sh` / `WATCH.sh`：状态检查与实时监控
+
+### 01_scraping/ - 数据采集
+- 爬虫脚本位于 `web_scraper/` 目录
+- 批量爬虫任务入口，需遵守爬虫策略
+
+### 02_ingest_and_merge/ - 数据导入与合并
+- `merge_crop_diseases.py` / `merge_kaggle_disease.py`：整合外部病害数据并映射标准类名
+- `merge_140_crops.py`：批量引入作物类数据集
+- `fetch_kaggle_datasets.py`：从Kaggle获取数据集
+- `import_reviewed_pests.py` / `import_llm_verified_scraped.py`：导入审核/验证后的数据
+- `rescue_rejected_pests.py`：恢复误拒样本
+- `cleanup_pests_orphan_jsons.py`：清理孤立的LLM JSON元数据
+
+### 03_cleaning/ - 数据清洗与审核
+- `bulk_rename_by_class.py`：根据目录结构与来源标签统一重命名
+- `deduplicate_images.py`：支持pHash/aHash去重、模糊检测、尺寸过滤
+- `count_images_by_class.py`：统计各类别图片数量
+- `generate_pest_review_manifest.py`：生成人工审核清单
+- `pest_review_server.py`：Web审核服务器（配合`docs/pest_manual_review.html`）
+
+### 04_llm_enhancement/ - LLM语义增强
+- `llm_tools/verify_and_describe.py`：调用多API对图片生成描述并执行语义校验
+- `llm_tools/multi_api_client.py`：多LLM API客户端（需配置`.env.llm`）
+- `monitor_llm_tasks.py`：监控LLM任务进度
+
+### 05_index_and_stats/ - 索引与统计
+- `build_jsonl.py`：生成多模态JSONL（Caption + VQA）
+- `generate_stats.py`：输出类别、来源分布统计（CSV/JSON报表）
 
 > 若脚本新增参数或逻辑，请同步更新 `docs/documentation.md` 与此清单。
 

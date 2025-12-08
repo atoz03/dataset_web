@@ -60,12 +60,52 @@
 
 ### 2.1 目录结构
 
+**数据集目录结构：**
+
 ```
 datasets/
 ├── crops/      # 农作物图像
 ├── pests/      # 农业害虫图像
 └── diseases/   # 植物病害图像
 ```
+
+**完整项目目录结构：**
+
+```
+dataset_web/
+├── datasets/                      # 标准化数据根目录
+│   ├── crops/                     # 农作物图像
+│   ├── pests/                     # 农业害虫图像
+│   └── diseases/                  # 植物病害图像
+├── scripts/                       # 数据处理脚本(分阶段组织)
+│   ├── 00_utilities/              # 监控、启动、状态检查脚本
+│   ├── 01_scraping/               # 网络爬虫相关脚本
+│   ├── 02_ingest_and_merge/       # 数据导入与合并
+│   ├── 03_cleaning/               # 数据清洗、去重、审核
+│   ├── 04_llm_enhancement/        # LLM语义验证与增强
+│   └── 05_index_and_stats/        # 索引生成与统计分析
+├── llm_tools/                     # LLM验证与描述生成工具
+├── web_scraper/                   # 爬虫项目与缓存
+├── docs/                          # 文档目录
+│   ├── documentation.md           # 核心知识库(本文件)
+│   ├── timeline.md                # 时间线与里程碑
+│   ├── pest_manual_review.html    # 人工审核界面
+│   ├── archive/                   # 历史文档与备份
+│   │   ├── reports/               # 历史报告归档
+│   │   └── backups/               # 数据备份文件
+│   ├── dev_notes/                 # 开发笔记与记忆库
+│   └── technical/                 # 技术文档
+├── stats_reports/                 # 统计报表输出目录
+├── mappings/                      # 类别映射表(crop/disease/pest)
+├── sources/                       # 原始数据来源清单
+├── logs/                          # 任务与审计日志
+├── paper/                         # 论文相关资料
+├── web-bundles/                   # Web资源打包文件
+├── data.jsonl                     # 全量多模态索引
+├── data_holdout_web.jsonl         # 网爬保留集(验证用)
+└── data.sample.jsonl              # 小样本示例
+```
+
 
 `<a id="sec-2-2"></a>`
 
@@ -99,22 +139,22 @@ datasets/
 ### 3.1 合并新数据源
 
 - **策略**: 始终采用“**拷贝而非移动**”的策略，将新数据拷贝到 `datasets/` 目录中，以保留原始数据。
-- **脚本**: 使用 `scripts/merge_*.py` 系列脚本，并在脚本中定义好新旧类别名的映射关系。
+- **脚本**: 使用 `scripts/02_ingest_and_merge/merge_*.py` 系列脚本，并在脚本中定义好新旧类别名的映射关系。
 
 `<a id="sec-3-2"></a>`
 
 ### 3.2 标准化文件名
 
 - **目的**: 对新合入的、文件名不规范的数据进行统一重命名。
-- **脚本**: [`scripts/bulk_rename_by_class.py`](scripts/bulk_rename_by_class.py:1)
-- **用法**: `python3 scripts/bulk_rename_by_class.py --root <target_dir> --tag <source_tag>`
+- **脚本**: [`scripts/03_cleaning/bulk_rename_by_class.py`](scripts/03_cleaning/bulk_rename_by_class.py:1)
+- **用法**: `python3 scripts/03_cleaning/bulk_rename_by_class.py --root <target_dir> --tag <source_tag>`
 
 `<a id="sec-3-3"></a>`
 
 ### 3.3 数据清洗
 
 - **目的**: 移除低质量、重复或损坏的图像。
-- **脚本**: [`scripts/deduplicate_images.py`](scripts/deduplicate_images.py:1)
+- **脚本**: [`scripts/03_cleaning/deduplicate_images.py`](scripts/03_cleaning/deduplicate_images.py:1)
 - **核心功能**:
   - **尺寸过滤**: 剔除小于 `min-width` 和 `min-height` 的图像。
   - **模糊检测**: 推荐使用 `--blur-method both`，结合拉普拉斯方差和 Tenengrad 梯度能量，减少误判。
@@ -126,13 +166,13 @@ datasets/
 ### 3.4 人工核验（网页）（已弃用，可以后续做数据验证）
 
 - **目的**: 在并入主数据集前进行人工快速抽查/核验，剔除无关或版权不明的图片。
-- **工具**: [`docs/pest_manual_review.html`](docs/pest_manual_review.html:1) (前端) + [`scripts/pest_review_server.py`](scripts/pest_review_server.py:1) (后端)。
+- **工具**: [`docs/pest_manual_review.html`](docs/pest_manual_review.html:1) (前端) + [`scripts/03_cleaning/pest_review_server.py`](scripts/03_cleaning/pest_review_server.py:1) (后端)。
 - **流程**:
-  1. 使用 `scripts/generate_pest_review_manifest.py` 生成待审核图片清单。
+  1. 使用 `scripts/03_cleaning/generate_pest_review_manifest.py` 生成待审核图片清单。
   2. 启动 `pest_review_server.py` 后端服务，它会加载 VLM 模型进行智能分析。
   3. 在浏览器中打开 `pest_manual_review.html`，进行批量审核、分析和标记。
   4. 审核完成后，导出审核结果 JSON 文件。
-  5. 使用 `scripts/import_reviewed_pests.py` 或 `scripts/import_llm_verified_scraped.py` 将通过审核的图片正式导入 `datasets/` 目录。
+  5. 使用 `scripts/02_ingest_and_merge/import_reviewed_pests.py` 或 `scripts/02_ingest_and_merge/import_llm_verified_scraped.py` 将通过审核的图片正式导入 `datasets/` 目录。
 
 `<a id="sec-3-5"></a>`
 
@@ -152,7 +192,7 @@ datasets/
 ### 3.6 生成数据索引 (JSONL)
 
 - **目的**: 为清洗干净的数据集生成包含多模态标注的 `data.jsonl` 索引文件。
-- **脚本**: [`scripts/build_jsonl.py`](scripts/build_jsonl.py:1)
+- **脚本**: [`scripts/05_index_and_stats/build_jsonl.py`](scripts/05_index_and_stats/build_jsonl.py:1)
 - **核心功能**:
   - 扫描 `datasets/` 下的所有图像及其 `.json` 元数据。
   - 根据文件名和本体，自动生成中英双语的 **Caption** 和 **VQA** 样本。
@@ -191,7 +231,7 @@ datasets/
 #### 已完成任务 ✅
 
 - ✅ **跨来源测试集 (web holdout, 2025-11-06)**: 生成 `data_holdout_web.jsonl`，仅含 `web` 来源样本（约 133,133 条），用于跨来源泛化评估。
-- ✅ **统计报告生成 (2025-11-06)**: 实现 `scripts/generate_stats.py`，生成4个CSV报告：
+- ✅ **统计报告生成 (2025-11-06)**: 实现 `scripts/05_index_and_stats/generate_stats.py`，生成4个CSV报告：
   - `counts_by_class.csv` (465个类别统计)
   - `counts_by_source.csv` (9个来源统计)
   - `counts_by_split.csv` (train/val/test划分统计)

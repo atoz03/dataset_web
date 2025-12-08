@@ -15,9 +15,34 @@
 ## 数据集优化与产出 ✅
 
 - data.jsonl 生成（2025-11-02）：基于 160,691 张图片生成约 857,315 条记录；跳过隐藏目录，优先使用 LLM 描述；分布 Train 79.2% | Val 9.6% | Test 11.2%。
-- 跨来源测试集（web holdout，2025-11-06）：在 `scripts/build_jsonl.py` 增加 `--holdout-source` 与 `__web__` 识别，生成 `data_holdout_web.jsonl`（约 133,133 条，仅 web 来源）。
+- 跨来源测试集（web holdout，2025-11-06）：在 `scripts/05_index_and_stats/build_jsonl.py` 增加 `--holdout-source` 与 `__web__` 识别，生成 `data_holdout_web.jsonl`（约 133,133 条，仅 web 来源）。
 
 ## 关键处理日志（按时间倒序）
+
+### 2025-11-17：项目目录结构重组与文档更新 🗂️
+
+- **背景**：根目录混乱，包含大量历史脚本、报告和备份文件，影响项目可维护性。
+- **执行操作**：
+  1. **创建archive目录结构**：
+     - `docs/archive/reports/`：归档历史报告（API验证、爬虫总结、任务执行等）
+     - `docs/archive/backups/`：归档数据备份文件（data.jsonl.backup_20251102等）
+  2. **脚本重组**：
+     - 创建 `scripts/00_utilities/`：集中存放10个监控/启动脚本（monitor_*.sh、START_*.sh等）
+     - 确认现有脚本分类：01_scraping、02_ingest_and_merge、03_cleaning、04_llm_enhancement、05_index_and_stats
+  3. **文件迁移**：
+     - 移动6个历史报告（4个MD + 2个JSON）至 `docs/archive/reports/`
+     - 移动1个备份文件（432MB）至 `docs/archive/backups/`
+     - 移动10个shell脚本至 `scripts/00_utilities/`
+  4. **文档更新**：
+     - 更新 `CLAUDE.md`：反映新目录结构、分阶段脚本清单、根目录整洁原则
+     - 更新 `docs/documentation.md`：添加完整项目目录树
+     - 更新 `docs/timeline.md`：记录本次整理
+- **验证结果**：
+  - ✅ 工作流水线完整性：29个脚本（8个合并、5个清洗、2个统计、10个工具）
+  - ✅ 配置文件齐全：.env.llm、requirements.txt、10个映射表
+  - ✅ 数据文件完整：data.jsonl、data_holdout_web.jsonl、data.sample.jsonl
+  - ✅ 根目录整洁：仅保留CLAUDE.md、README.md和核心数据文件
+- **成果**：项目结构清晰化，文档同步更新，为后续开发和协作奠定良好基础。
 
 ### 2025-11-06：pests 剩余覆盖完成与脚本优化 🔧
 
@@ -56,7 +81,7 @@
   - Model: `gpt-5-nano`（技术路线从早期的 4zapi → gemini-2.0-flash-lite-001 → gemini-2.5-flash-lite-nothinking，最终采用 nano）
   - Workers: `32`（高并发，显著提升处理速度）
   - 协议：OpenAI 兼容（`VLM_TYPE=openai`）
-- 创新：项目开发了独特的错误数据挽救工作流（`scripts/rescue_rejected_pests.py`），从被 LLM 拒绝的数据中，根据其 `actual_class` 提取出大量被初始标注错误的有效数据，显著提高数据利用率。
+- 创新：项目开发了独特的错误数据挽救工作流（`scripts/02_ingest_and_merge/rescue_rejected_pests.py`），从被 LLM 拒绝的数据中，根据其 `actual_class` 提取出大量被初始标注错误的有效数据，显著提高数据利用率。
 
 ### 2025-10-31：数据集状态审计与文档更新 📊
 

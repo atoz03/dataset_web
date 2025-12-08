@@ -204,7 +204,7 @@ export $(grep -v '^#' .env | xargs)
 
 ```bash
 # 统计当前数据集
-python3 scripts/count_images_by_class.py \
+python3 scripts/03_cleaning/count_images_by_class.py \
     --roots datasets/diseases datasets/crops datasets/pests
 
 # 查看示例数据
@@ -247,9 +247,9 @@ graph LR
 
 ```bash
 # 合并已有数据集
-python3 scripts/merge_crop_diseases.py
-python3 scripts/merge_140_crops.py
-python3 scripts/merge_kaggle_disease.py
+python3 scripts/02_ingest_and_merge/merge_crop_diseases.py
+python3 scripts/02_ingest_and_merge/merge_140_crops.py
+python3 scripts/02_ingest_and_merge/merge_kaggle_disease.py
 ```
 
 </td>
@@ -275,7 +275,7 @@ scrapy crawl agri_sites \
 <summary><b>📝 文件名标准化</b></summary>
 
 ```bash
-python3 scripts/bulk_rename_by_class.py \
+python3 scripts/03_cleaning/bulk_rename_by_class.py \
     --root datasets/diseases \
     --tag pd
 ```
@@ -292,7 +292,7 @@ python3 scripts/bulk_rename_by_class.py \
 <summary><b>🔍 智能去重与过滤</b></summary>
 
 ```bash
-python3 scripts/deduplicate_images.py \
+python3 scripts/03_cleaning/deduplicate_images.py \
     --roots datasets/diseases datasets/crops datasets/pests \
     --min-width 224 --min-height 224 \
     --blur-method both \
@@ -343,7 +343,7 @@ python3 scripts/deduplicate_images.py \
 
 ```bash
 # 启动Web审核服务器
-python3 scripts/pest_review_server.py \
+python3 scripts/03_cleaning/pest_review_server.py \
     --root web_scraper/scraped_images
 
 # 浏览器打开审核页面
@@ -397,7 +397,7 @@ graph TD
 <summary><b>📊 生成JSONL数据索引</b></summary>
 
 ```bash
-python3 scripts/build_jsonl.py \
+python3 scripts/05_index_and_stats/build_jsonl.py \
     --roots datasets/diseases datasets/crops datasets/pests \
     --out data.jsonl \
     --train 0.8 --val 0.1 --test 0.1 \
@@ -515,12 +515,12 @@ dataset_web/
 │   ├── 🐛 pests/                # 害虫图像 (30+ 类别)
 │   └── 🍂 diseases/             # 病害图像 (50+ 类别)
 │
-├── 🛠️ scripts/                  # 数据处理脚本
-│   ├── merge_*.py              # 数据合并工具
-│   ├── deduplicate_images.py  # 智能去重
-│   ├── bulk_rename_by_class.py # 文件名标准化
-│   ├── build_jsonl.py          # 索引生成
-│   └── ...
+├── 🛠️ scripts/                  # 数据处理与流水线脚本（分阶段）
+│   ├── 01_scraping/            # 图片抓取与爬虫编排
+│   ├── 02_ingest_and_merge/    # 外部数据集下载与合并
+│   ├── 03_cleaning/            # 命名标准化、去重与质量清洗
+│   ├── 04_llm_enhancement/     # LLM 任务监控与队列管理
+│   └── 05_index_and_stats/     # JSONL 索引生成与统计报告
 │
 ├── 🤖 llm_tools/                # LLM增强工具
 │   ├── verify_and_describe.py # 语义验证
@@ -611,7 +611,7 @@ dataset_web/
 <details>
 <summary><b>Q3: 如何自定义Caption模板？</b></summary>
 
-编辑 `scripts/build_jsonl.py`:
+编辑 `scripts/05_index_and_stats/build_jsonl.py`:
 
 - `make_caption_samples()` - Caption生成逻辑
 - `make_vqa_samples()` - VQA生成逻辑
@@ -727,5 +727,4 @@ Fork → 修改 → 提交 [Pull Request](../../pulls)
 </table>
 
 ---
-
 
