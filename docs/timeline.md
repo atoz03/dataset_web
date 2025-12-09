@@ -19,6 +19,14 @@
 
 ## 关键处理日志（按时间倒序）
 
+### 2025-12-09：稻作阶段判别与 Responses API 适配 🚀
+
+- **代码更新**：`llm_tools/verify_and_describe.py` 增加 `ResponsesVLMClient`，支持 `/codex/v1/responses`（`instructions` 作为系统 prompt）；新增 `--api-type responses`；修复 `_validate_payload` 绑定问题；稻作阶段模式输出 `stage_en/stage_zh/stage_conf`。
+- **运行配置**：`VLM_API_BASE=https://right.codes/codex/v1`、`VLM_MODEL=gpt-5.1`、`VLM_TYPE=responses`、代理 `socks5h://127.0.0.1:7895`、`workers=4`、`--rice-stage-mode --skip-existing-metadata --action move`。
+- **处理范围**：`web_scraper/scraped_images` 下全部稻作相关目录（rice field、paddy tillering/jointing、rice booting/jointing/heading/heading panicles/panicle initiation/grain filling/milk/tillering、young rice tillering、Rice growth stages English、Time series timelapse）。
+- **结果**：通过样本保留并写入同名 `.json` 元数据；不匹配移入各目录 `.rejected_by_llm/`（Time series timelapse 多为时钟类被整体拒绝）。日志位于 `logs/2025-12-09/llm_enhancement_*`。
+- **后续建议**：若需复核或删除可检查 `.rejected_by_llm/`；重新计数可运行 `python scripts/count_images_by_class.py --roots web_scraper/scraped_images`。
+
 ### 2025-11-17：项目目录结构重组与文档更新 🗂️
 
 - **背景**：根目录混乱，包含大量历史脚本、报告和备份文件，影响项目可维护性。

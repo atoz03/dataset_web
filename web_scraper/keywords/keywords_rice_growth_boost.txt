@@ -1,0 +1,12 @@
+rice jointing stage
+rice booting stage
+rice panicle initiation
+rice heading stage
+rice heading panicles
+rice grain filling stage
+rice milk stage
+paddy jointing
+水稻 拔节期
+水稻 孕穗期
+水稻 抽穗期
+水稻 灌浆期

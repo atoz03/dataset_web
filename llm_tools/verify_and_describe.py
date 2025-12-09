@@ -45,6 +45,7 @@ class XmdbdVLMClient:
         model: str,
         timeout: int = 120,
         verify_ssl: bool = True,
+        stage_mode: bool = False,
     ) -> None:
         if not api_key:
             raise ValueError("API key is required.")
@@ -55,6 +56,8 @@ class XmdbdVLMClient:
         self.base_url = base_url.rstrip("/")
         self.model = model
         self.timeout = timeout
+        # rice 阶段判别模式开关
+        self.stage_mode = stage_mode
         self.session = requests.Session()
         self.session.headers.update({
             "Authorization": f"Bearer {self.api_key}",
@@ -100,7 +103,162 @@ class XmdbdVLMClient:
 
         logging.info("XMDBD VLM client initialized for model '%s'", self.model)
 
+
+class ResponsesVLMClient(XmdbdVLMClient):
+    """适配 OpenAI Responses 接口（/v1/responses），使用 instructions 作为系统提示。"""
+
+    def __init__(
+        self,
+        api_key: str,
+        base_url: str,
+        model: str,
+        timeout: int = 120,
+        verify_ssl: bool = True,
+        stage_mode: bool = False,
+    ) -> None:
+        super().__init__(api_key, base_url, model, timeout, verify_ssl, stage_mode)
+        # Responses 端点可能直接包含 /responses
+        self.endpoint = base_url if base_url.rstrip("/").endswith("responses") else f"{base_url.rstrip('/')}/responses"
+        logging.info("Responses VLM client initialized for model '%s'", self.model)
+
+    def _post(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        try:
+            response = self.session.post(self.endpoint, json=payload, timeout=self.timeout)
+            response.raise_for_status()
+        except requests.RequestException as exc:
+            raise VLMAPIError(f"HTTP request failed: {exc}") from exc
+        try:
+            return response.json()
+        except ValueError as exc:
+            raise VLMAPIError("Failed to decode JSON response from VLM API") from exc
+
+    def analyze_image(self, image_path: Path, expected_class: str) -> Dict[str, Any]:
+        if not image_path.is_file():
+            raise FileNotFoundError(f"Image not found: {image_path}")
+
+        logging.info("Analyzing %s for class '%s' (responses api)...", image_path, expected_class)
+        image_bytes = image_path.read_bytes()
+        max_size_bytes = 500 * 1024
+        if len(image_bytes) > max_size_bytes:
+            try:
+                from PIL import Image
+                import io
+                img = Image.open(io.BytesIO(image_bytes))
+                if img.mode == 'RGBA':
+                    img = img.convert('RGB')
+                quality = 85
+                while quality > 20:
+                    buffer = io.BytesIO()
+                    img.save(buffer, format='JPEG', quality=quality, optimize=True)
+                    compressed_bytes = buffer.getvalue()
+                    if len(compressed_bytes) <= max_size_bytes:
+                        image_bytes = compressed_bytes
+                        logging.info(
+                            f"Compressed {image_path.name} from {len(image_path.read_bytes())/1024:.1f}KB "
+                            f"to {len(compressed_bytes)/1024:.1f}KB (quality={quality})"
+                        )
+                        break
+                    quality -= 10
+            except Exception as e:
+                logging.warning(f"Failed to compress {image_path.name}: {e}, using original")
+
+        encoded_image = base64.b64encode(image_bytes).decode("utf-8")
+        mime_type, _ = mimetypes.guess_type(str(image_path))
+        if not mime_type:
+            mime_type = "image/jpeg"
+
+        system_prompt = self._build_prompt(expected_class)
+        payload = {
+            "model": self.model,
+            "instructions": system_prompt,
+            "input": [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "input_text", "text": "Analyze the attached image."},
+                        {"type": "input_image", "image_url": f"data:{mime_type};base64,{encoded_image}"},
+                    ],
+                }
+            ],
+            "max_output_tokens": 800,
+        }
+
+        data = self._post(payload)
+        content = self._extract_content(data)
+        parsed = self._coerce_json(content, expected_class)
+        return parsed
+
+    @staticmethod
+    def _extract_content(response_payload: Dict[str, Any]) -> str:
+        # Responses API: output -> list -> content -> list -> text
+        try:
+            output = response_payload.get("output") or response_payload.get("outputs")
+            if output:
+                if isinstance(output, list):
+                    first = output[0]
+                    content = first.get("content")
+                    if isinstance(content, list) and content:
+                        text = content[0].get("text") or content[0].get("output_text") or content[0].get("text_output")
+                        if text:
+                            return text
+                if isinstance(output, str):
+                    return output
+            # fallback to choices style
+            if "choices" in response_payload:
+                return XmdbdVLMClient._extract_content(response_payload)
+        except Exception:
+            pass
+        raise VLMAPIError("Unexpected response structure from Responses API")
+
+    def _coerce_json(self, text: str, expected_class: str) -> Dict[str, Any]:
+        def try_parse(s: str):
+            try:
+                return json.loads(s)
+            except Exception:
+                return None
+        parsed = try_parse(text)
+        if not parsed:
+            m = re.search(r"```(?:json)?\s*(\{[\s\S]*?\})\s*```", text)
+            if m:
+                parsed = try_parse(m.group(1))
+        if not parsed:
+            m = re.search(r"(\{[\s\S]*\})", text)
+            if m:
+                parsed = try_parse(m.group(1))
+        if not parsed:
+            raise VLMAPIError("Model response is not valid JSON")
+        try:
+            if not parsed.get("is_match"):
+                rr = parsed.get("rejection_reason")
+                if not isinstance(rr, str) or not rr.strip():
+                    actual = parsed.get("actual_class") or "unknown"
+                    parsed["rejection_reason"] = f"Expected '{expected_class}', got '{actual}'."
+        except Exception:
+            pass
+        self._validate_payload(parsed)
+        return parsed
+
     def _build_prompt(self, expected_class: str) -> str:
+        if self.stage_mode:
+            return (
+                "You are an agronomy vision expert focusing on rice phenology. "
+                "Given an input image, determine if it is rice/paddy and classify its growth stage. "
+                "Allowed stages (English labels): seedling, tillering, jointing, booting, panicle initiation, heading, heading panicles, "
+                "grain filling, milk, ripening/harvest, time-lapse/sequence. "
+                "If the image is not rice/paddy, set is_match=false and give a concise rejection_reason. "
+                "Return JSON keys: "
+                "is_match (boolean), "
+                "stage_en (string or null), "
+                "stage_zh (string or null), "
+                "stage_conf (float 0-1), "
+                "actual_class (string or null: main subject if not rice), "
+                "quality_score (float 0-1), "
+                "rejection_reason (string; non-empty when is_match=false), "
+                "description_en (string), "
+                "description_zh (string). "
+                "Use concise stage_en labels from the allowed set; stage_zh 用中文阶段名（如 秧苗期/分蘖期/拔节期/孕穗期/抽穗期/灌浆期/乳熟期/成熟期/时间序列）. "
+                "Respond with ONLY a single valid JSON object."
+            )
         return (
             "You are an agronomy vision expert. You are validating high-resolution images of plant leaves. "
             f"The image is expected to belong to the class '{expected_class}'. "
@@ -272,8 +430,7 @@ class XmdbdVLMClient:
 
         return message_content
 
-    @staticmethod
-    def _validate_payload(payload: Dict[str, Any]) -> None:
+    def _validate_payload(self, payload: Dict[str, Any]) -> None:
         required_keys = {
             "is_match": bool,
             "actual_class": (str, type(None)),
@@ -282,6 +439,13 @@ class XmdbdVLMClient:
             "description_en": str,
             "description_zh": str,
         }
+        if self.stage_mode:
+            required_keys.update({
+                "stage_en": (str, type(None)),
+                "stage_zh": (str, type(None)),
+                "stage_conf": (int, float, type(None)),
+            })
+
         for key, expected_type in required_keys.items():
             if key not in payload:
                 raise VLMAPIError(f"Missing key '{key}' in model response")
@@ -498,6 +662,17 @@ def main():
         action="store_true",
         help="Skip images that already have a sibling .json metadata file."
     )
+    parser.add_argument(
+        "--rice-stage-mode",
+        action="store_true",
+        help="启用稻作阶段判别模式：输出 stage_en/stage_zh/stage_conf 并判定是否稻作图像。"
+    )
+    parser.add_argument(
+        "--api-type",
+        type=str,
+        default=os.environ.get("VLM_TYPE", "openai"),
+        help="API 类型：openai|responses|gemini|auto（auto 根据 base 判定）"
+    )
 
     args = parser.parse_args()
 
@@ -537,7 +712,7 @@ def main():
     use_multi_api = os.environ.get("VLM_USE_MULTI_API", "false").lower() in {"true", "1", "yes"}
     
     try:
-        if use_multi_api and MULTI_API_CLIENT_AVAILABLE:
+        if use_multi_api and MULTI_API_CLIENT_AVAILABLE and args.api_type not in {"responses"}:
             # 多API负载均衡模式
             logging.info("🔀 Using Multi-API load balancing mode")
             api_configs = []
@@ -571,9 +746,27 @@ def main():
             
         else:
             # 单API模式（兼容旧逻辑）
-            use_gemini_client = "localhost" in args.api_base.lower() or "generativelanguage.googleapis.com" in args.api_base.lower()
-            
-            if use_gemini_client and GEMINI_CLIENT_AVAILABLE:
+            base_lower = args.api_base.lower()
+            api_type = args.api_type.lower()
+            is_responses = api_type == "responses" or base_lower.endswith("/responses") or "responses" in base_lower
+            use_gemini_client = (api_type == "gemini") or ("localhost" in base_lower) or ("generativelanguage.googleapis.com" in base_lower)
+            if is_responses:
+                logging.info("Using OpenAI Responses API client (instructions as system prompt)")
+                verify_ssl = True
+                env_verify = os.environ.get("VLM_VERIFY_SSL")
+                if env_verify is not None:
+                    verify_ssl = env_verify.lower() in {"1", "true", "yes"}
+                if args.insecure:
+                    verify_ssl = False
+                client = ResponsesVLMClient(
+                    api_key=args.api_key,
+                    base_url=args.api_base,
+                    model=args.model,
+                    timeout=args.timeout,
+                    verify_ssl=verify_ssl,
+                    stage_mode=args.rice_stage_mode,
+                )
+            elif use_gemini_client and GEMINI_CLIENT_AVAILABLE:
                 logging.info("Using Gemini API client (detected Google/local proxy endpoint)")
                 client = GeminiVLMClient(
                     api_key=args.api_key,
@@ -596,6 +789,7 @@ def main():
                     model=args.model,
                     timeout=args.timeout,
                     verify_ssl=verify_ssl,
+                    stage_mode=args.rice_stage_mode,
                 )
     except Exception as exc:
         logging.error("Failed to initialize VLM client: %s", exc)
