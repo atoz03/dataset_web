@@ -1,3 +1,5 @@
+
+
 <div align="center">
 
 # 🌾 农业多模态视觉数据集整合
@@ -186,7 +188,7 @@ pip install -r requirements.txt
 
 ```bash
 # 创建配置文件（用于LLM增强功能）
-cat > .env << EOF
+cat > .env.llm << EOF
 VLM_API_KEY=sk-your-api-key-here
 VLM_API_BASE=https://xmdbd.online/v1
 VLM_MODEL=gemini-2.5-flash
@@ -194,7 +196,7 @@ VLM_WORKERS=8
 EOF
 
 # 载入环境变量
-export $(grep -v '^#' .env | xargs)
+export $(grep -v '^#' .env.llm | xargs)
 ```
 
 </details>
@@ -727,4 +729,3 @@ Fork → 修改 → 提交 [Pull Request](../../pulls)
 </table>
 
 ---
-
