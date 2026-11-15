@@ -18,16 +18,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License">
   <img src="https://img.shields.io/badge/python-3.9+-blue.svg" alt="Python">
-  <img src="https://img.shields.io/badge/status-active-success.svg" alt="Status">
-  <img src="https://img.shields.io/badge/dataset-200K+-orange.svg" alt="Dataset Size">
-  <img src="https://img.shields.io/badge/categories-200+-yellow.svg" alt="Categories">
   <img src="https://img.shields.io/badge/multilingual-中文%20%7C%20English-green.svg" alt="Multilingual">
-</p>
-
-<p align="center">
-  <img src="https://img.shields.io/github/stars/your-repo/dataset_web?style=social" alt="GitHub stars">
-  <img src="https://img.shields.io/github/forks/your-repo/dataset_web?style=social" alt="GitHub forks">
-  <img src="https://img.shields.io/github/watchers/your-repo/dataset_web?style=social" alt="GitHub watchers">
 </p>
 
 <br>
@@ -38,10 +29,9 @@
 
 ## 📦 数据发布与获取（重要说明）
 
-- 本仓库暂不附带完整数据集，原因：体量较大（数十万张图片，多模态标注）。
-- 我们将于近期在 Hugging Face Hub 发布公开版本的数据集（含 JSONL 索引与示例）。
-- 发布后会在本 README 置顶更新下载链接与获取方式：`https://huggingface.co/datasets/<org>/<dataset_name>`（占位）。
-- 目前可使用 `data.sample.jsonl` 与配套脚本复现流程或自建数据；完整结构与规范见 `docs/documentation.md`。
+- 本仓库目前提供数据处理脚本、文档与格式示例，不包含完整图像数据集，暂未提供公开下载地址。
+- [`data.sample.jsonl`](data.sample.jsonl) 只包含**合成示例记录**，其中的图片路径仅用于展示字段结构，不对应仓库内的真实图片，也不能直接用于训练。
+- 如需处理自己的数据，请按 [项目文档](docs/documentation.md) 准备图片目录与配置。未来若发布公开数据，将在这里补充实际下载链接。
 
 ## 🎯 项目愿景
 
@@ -112,17 +102,11 @@
 
 <div align="center">
 
-### 📈 数据规模（持续增长中）
+### 📈 数据规模与发布范围
 
 </div>
 
-```
-🌱 作物 (Crops)          📊 140+ 类别    🖼️  80,000+ 张
-🐛 害虫 (Pests)          📊  30+ 类别    🖼️  15,000+ 张  
-🍂 病害 (Diseases)       📊  50+ 类别    🖼️ 120,000+ 张
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📦 总计                 📊 220+ 类别    🖼️ 215,000+ 张
-```
+历史规模统计见 [项目时间线](docs/timeline.md)。不同阶段清洗与去重口径可能不同；当前仓库没有公开完整图片数据及对应的可验证清单，因此不再将历史规模展示为当前可获取数据量。
 
 <div align="center">
 
@@ -172,7 +156,7 @@
 
 ```bash
 # 克隆项目
-git clone https://github.com/your-repo/dataset_web.git
+git clone https://github.com/atoz03/dataset_web.git
 cd dataset_web
 
 # 安装依赖
@@ -188,7 +172,7 @@ pip install -r requirements.txt
 # 创建配置文件（用于LLM增强功能）
 cat > .env << EOF
 VLM_API_KEY=sk-your-api-key-here
-VLM_API_BASE=https://xmdbd.online/v1
+VLM_API_BASE=https://your-provider.example/v1  # 请替换为实际 API 端点
 VLM_MODEL=gemini-2.5-flash
 VLM_WORKERS=8
 EOF
@@ -207,8 +191,8 @@ export $(grep -v '^#' .env | xargs)
 python3 scripts/03_cleaning/count_images_by_class.py \
     --roots datasets/diseases datasets/crops datasets/pests
 
-# 查看示例数据
-head -n 5 data.sample.jsonl | jq
+# 查看合成格式示例（不包含真实图片）
+head -n 5 data.sample.jsonl | jq -c .
 ```
 
 </details>
@@ -374,8 +358,7 @@ python3 llm_tools/verify_and_describe.py \
 python3 llm_tools/verify_and_describe.py \
     --root datasets/diseases \
     --model gemini-2.5-flash \
-    --workers 8 \
-    --insecure
+    --workers 8
 ```
 
 **工作流程**:
@@ -404,21 +387,24 @@ python3 scripts/05_index_and_stats/build_jsonl.py \
     --seed 42
 ```
 
-**输出格式**:
+**输出格式**（合成示例记录，不包含实际图片文件）：
 
 ```json
 {
-  "image": "datasets/diseases/corn_rust_leaf__pd__a3f2e1b9.jpg",
+  "image": "datasets/diseases/corn_rust_leaf__pd__example.jpg",
   "task": "caption",
-  "text": "这是一张玉米锈病叶片的照片。This is a photo of corn rust leaf.",
-  "split": "train",
+  "text": "这是一张玉米锈病叶片的照片。",
+  "lang": "zh",
   "labels": {
-    "category": "diseases",
-    "crop": "corn",
+    "root": "diseases",
+    "class": "Corn rust leaf",
+    "crop": "Corn",
     "disease": "rust",
-    "source": "pd",
-    "class": "corn rust leaf"
-  }
+    "pest": null,
+    "healthy": false,
+    "source": "pd"
+  },
+  "split": "train"
 }
 ```
 
@@ -511,9 +497,9 @@ python3 scripts/05_index_and_stats/build_jsonl.py \
 ```
 dataset_web/
 ├── 📦 datasets/                  # 数据集主目录
-│   ├── 🌱 crops/                # 作物图像 (140+ 类别)
-│   ├── 🐛 pests/                # 害虫图像 (30+ 类别)
-│   └── 🍂 diseases/             # 病害图像 (50+ 类别)
+│   ├── 🌱 crops/                # 作物图像（需自行准备）
+│   ├── 🐛 pests/                # 害虫图像（需自行准备）
+│   └── 🍂 diseases/             # 病害图像（需自行准备）
 │
 ├── 🛠️ scripts/                  # 数据处理与流水线脚本（分阶段）
 │   ├── 01_scraping/            # 图片抓取与爬虫编排
@@ -541,8 +527,8 @@ dataset_web/
 │   ├── disease_mappings.json   # 病害映射
 │   └── pest_mappings.json      # 害虫映射
 │
-├── 📊 data.jsonl                # 完整数据索引 (215K+ 条)
-├── 📋 data.sample.jsonl         # 示例数据
+├── 📊 data.jsonl                # 本地生成索引（不随仓库提供）
+├── 📋 data.sample.jsonl         # 合成 JSONL 格式示例
 └── 📄 requirements.txt          # Python依赖
 ```
 
@@ -550,37 +536,9 @@ dataset_web/
 
 ## 📖 文档
 
-<table>
-<tr>
-<td width="50%">
-
-### 📚 核心文档
-
-- 📖 [**完整项目文档**](docs/documentation.md)
-  - 设计理念与本体定义
-  - 数据处理历史记录
-  - 未来规划路线图
-
-- 🔧 [**API验证报告**](API_VERIFICATION_SUMMARY.md)
-  - 数据源API可用性分析
-  - 推荐API与配置指南
-
-</td>
-<td width="50%">
-
-### 📊 状态报告
-
-- 📈 [**抓取工作总结**](SCRAPING_SUMMARY.md)
-  - 网络爬虫采集成果
-  - 数据源优先级策略
-
-- 🤖 [**LLM工具指南**](llm_tools/README.md)
-  - 语义验证详解
-  - 描述增强使用说明
-
-</td>
-</tr>
-</table>
+- [完整项目文档](docs/documentation.md) — 数据处理流程、设计与配置说明。
+- [项目时间线](docs/timeline.md) — 历史里程碑与统计记录。
+- [LLM 工具指南](llm_tools/README.md) — 图像语义验证与描述增强。
 
 ---
 
@@ -640,10 +598,9 @@ dataset_web/
 ```bash
 export VLM_WORKERS=8          # 并发线程数
 export VLM_TIMEOUT=120        # API超时（秒）
-export VLM_VERIFY_SSL=false   # 禁用SSL验证
 ```
 
-或命令行参数：`--workers 8 --timeout 120 --insecure`
+或命令行参数：`--workers 8 --timeout 120`。默认保持 TLS 证书校验；自签名证书应先配置可信 CA，不要把 `--insecure` 当作常规参数。
 
 </details>
 
